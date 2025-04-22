@@ -2,6 +2,9 @@
 # please find him here: https://andreagenovese.com/
 # and his wonderful tutorial about hrtf processing here: https://www.youtube.com/watch?v=a4mpK_2koR4
 
+# also please keep in mind that this isn't supposed to be "efficient" or "clean" or "lightweight".
+# this is meant to be the most brute force way to do all my hrtf processing in one file with one interface. 
+
 import numpy as np
 import matplotlib.pyplot as plt
 import sys, glob
@@ -13,8 +16,6 @@ from IPython.display import Audio # <- Audio listening (in notebook)
 import tkinter as tk
 from tkinter import filedialog
 import pygame
-
-print('Activate the virtual environment in Terminal with: .venv/bin/activate')
 
 root = tk.Tk()
 root.geometry('800x1000')
@@ -71,31 +72,60 @@ selectSOFAFileButton.grid(row=13, column=1)
 selectSOFAFileLabel.grid(row=14, column=1)
 
 getSOFAFileMetadataButton = tk.Button(root, text='Get SOFA File Metadata', state='disabled', command=lambda:getSOFAFileMetadata())
-getSOFAFileMetadataButton.grid(row=15, column=1)
+getSOFAFileMetadataButton.grid(row=15, column=0)
 
-sofaViewButton = tk.Button(root, text='View SOFA File', state='disabled', command=lambda:displaySOFAFile())
-sofaViewButton.grid(row=16, column=1)
+getSOFAFileDimensionsButton = tk.Button(root, text='Get SOFA File Dimensions', state='disabled', command=lambda:getSOFAFileDimensions())
+getSOFAFileDimensionsButton.grid(row=15, column=2)
 
-azimuthTextBox = tk.Text(root, height=1, width=5)
-azimuthTextBox.grid(row=17, column=0)
+sofaMeasurementTextBox = tk.Text(root, state='disabled', height=1, width=5)
+sofaMeasurementTextBox.grid(row=16, column=0)
+
+sofaMeasurementLabel = tk.Label(root, text='Measurement Index\n(default: 0)\n')
+sofaMeasurementLabel.grid(row=17, column=0)
+
+sofaEmitterTextBox = tk.Text(root, state='disabled', height=1, width=5)
+sofaEmitterTextBox.grid(row=16, column=2)
+
+sofaEmitterLabel = tk.Label(root, text='Emitter\n(default: 1)\n')
+sofaEmitterLabel.grid(row=17, column=2)
+
+frequencyXLimTextBox = tk.Text(root, state='disabled', height=1, width=15)
+frequencyXLimTextBox.grid(row=18, column=0)
+
+frequencyXLimLabel = tk.Label(root, text='Frequency Range (Hz)\n[start, end]')
+frequencyXLimLabel.grid(row=19, column=0)
+
+magnitudeYLimTextBox = tk.Text(root, state='disabled', height=1, width=15)
+magnitudeYLimTextBox.grid(row=18, column=2)
+
+magnitudeYLimLabel = tk.Label(root, text='Magnitude (dB)\n[start, end]')
+magnitudeYLimLabel.grid(row=19, column=2)
+
+sofaViewButton = tk.Button(root, text='View SOFA File', state='disabled', command=lambda:displaySOFAFile(frequencyXLimTextBox.get(1.0, 'end-1c'), magnitudeYLimTextBox.get(1.0, 'end-1c'), sofaMeasurementTextBox.get(1.0, 'end-1c'), sofaEmitterTextBox.get(1.0, 'end-1c')))
+sofaViewButton.grid(row=20, column=1)
+
+azimuthTextBox = tk.Text(root, state='disabled', height=1, width=5)
+azimuthTextBox.grid(row=21, column=0)
 
 azimuthLabel = tk.Label(root, text='Desired azimuth (in deg)')
-azimuthLabel.grid(row=18, column=0)
+azimuthLabel.grid(row=22, column=0)
 
-elevationTextBox = tk.Text(root, height=1, width=5)
-elevationTextBox.grid(row=17, column=2)
+elevationTextBox = tk.Text(root, state='disabled', height=1, width=5)
+elevationTextBox.grid(row=21, column=2)
 
 elevationLabel = tk.Label(root, text='Desired elevation (in deg)')
-elevationLabel.grid(row=18, column=2)
+elevationLabel.grid(row=22, column=2)
 
 sofaDisplayButton = tk.Button(root, text='Render Source with SOFA file', state='disabled', command=lambda:manualSOFADisplay(azimuthTextBox.get(1.0, 'end-1c'), elevationTextBox.get(1.0, 'end-1c'), source_file))
-sofaDisplayButton.grid(row=19, column=1)
+sofaDisplayButton.grid(row=22, column=1)
 
 
 # ---
 
-quitButton = tk.Button(root, text='Quit', command=root.destroy)
-quitButton.grid(row=20, column=1)
+quitButton = tk.Button(root, text='Quit', command=quit)
+quitButton.grid(row=40, column=1)
+
+# ---
 
 def playAudio(audio_file):
     pygame.mixer.init()
@@ -267,8 +297,15 @@ def selectSOFAFile():
         sofa_file_print = sofa_file.split('/')
         selectSOFAFileLabel.config(text='SOFA file:\n' + sofa_file_print[len(sofa_file_print)-1] + '\n')
         getSOFAFileMetadataButton.config(state='active')
+        getSOFAFileDimensionsButton.config(state='active')
         sofaDisplayButton.config(state='active')
         sofaViewButton.config(state='active')
+        sofaMeasurementTextBox.config(state='normal')
+        sofaEmitterTextBox.config(state='normal')
+        azimuthTextBox.config(state='normal')
+        elevationTextBox.config(state='normal')
+        frequencyXLimTextBox.config(state='normal')
+        magnitudeYLimTextBox.config(state='normal')
     else:
         return
 
@@ -280,11 +317,32 @@ def getSOFAFileMetadata():
     v.pack(side='right', fill='y')
     myString = ''
     for attr in sofa.Database.open(sofa_file).Metadata.list_attributes():
-            myString = myString + ("{0}: {1}".format(attr, sofa.Database.open(sofa_file).Metadata.get_attribute(attr))) + '\n'
+        myString = myString + ("{0}: {1}".format(attr, sofa.Database.open(sofa_file).Metadata.get_attribute(attr))) + '\n'
     windowSOFAMetadataLabel = tk.Text(newWindow, width=100, height=100, wrap='word', yscrollcommand=v.set)
     windowSOFAMetadataLabel.insert('end', str(myString))
     windowSOFAMetadataLabel.pack()
+    # for attr in sofa.Database.open(sofa_file).Data.dump():
+    #     myString2 = myString2 + ("{0}: {1}".format(attr, sofa.Database.open(sofa_file).Data.dump(attr))) + '\n'
+    # windowSOFADataLabel = tk.Text(newWindow, width=100, height=100, wrap='word', yscrollcommand=v.set)
+    # windowSOFADataLabel.insert('end', str(myString2))
+    # windowSOFADataLabel.pack()
+
     v.config(command=windowSOFAMetadataLabel.yview)
+
+def getSOFAFileDimensions():
+    newWindow = tk.Toplevel(root)
+    newWindow.geometry('600x400')
+    newWindow.title('SOFA File Dimensions')
+    v = tk.Scrollbar(newWindow, orient='vertical')
+    v.pack(side='right', fill='y')
+    definitionsLabel = tk.Label(newWindow, text='C = Size of coordinate dimension (always three).\n\nI = Single dimension (always one).\n\nM = Number of measurements.\n\nR = Number of receivers or SH coefficients (depending on ReceiverPosition_Type).\n\nE = Number of emitters or SH coefficients (depending on EmitterPosition_Type).\n\nN = Number of samples, frequencies, SOS coefficients (depending on self.GLOBAL_DataType).')
+    definitionsLabel.pack()
+    myString = ''
+    for dimen in sofa.Database.open(sofa_file).Dimensions.list_dimensions():
+        myString = myString + ("{0}: {1}".format(dimen, sofa.Database.open(sofa_file).Dimensions.get_dimension(dimen))) + '\n'
+    windowSOFADimensionsLabel = tk.Text(newWindow, width=10, height=10, wrap='word', yscrollcommand=v.set)
+    windowSOFADimensionsLabel.insert('end', str(myString))
+    windowSOFADimensionsLabel.pack()
 
 def find_nearest(array, value):
     array = np.asarray(array)
@@ -307,16 +365,38 @@ def plot_coordinates(coords, title):
     plt.title(title)
     return q
 
-def displaySOFAFile():
+def displaySOFAFile(xlim, ylim, measurement=0, emitter=1):
+    if measurement == '':
+        measurement = 0
+    if emitter == '':
+        emitter = 1
     SOFA_HRTF = sofa.Database.open(sofa_file)
 
     # plot source coordinates
     source_positions = SOFA_HRTF.Source.Position.get_values(system='cartesian')
     plot_coordinates(source_positions, 'Source positions')
 
-    measurement = 5
-    emitter = 0
+    measurement = measurement
+    emitter = emitter
     legend = []
+
+    xlim = str(xlim)
+    for char in xlim:
+        if char == '[' or char == ']' or char == ' ':
+            xlim = xlim.replace(char, '')
+    for i in range(0, len(xlim)):
+        if xlim[i] == ',':
+            xlim_start = xlim[0:i]
+            xlim_end = xlim[i+1:]
+
+    ylim = str(ylim)
+    for char in ylim:
+        if char == '[' or char == ']' or char == ' ':
+            ylim = ylim.replace(char, '')
+    for i in range(0, len(ylim)):
+        if ylim[i] == ',':
+            ylim_start = ylim[0:i]
+            ylim_end = ylim[i+1:]
 
     t = np.arange(0, SOFA_HRTF.Dimensions.N)*SOFA_HRTF.Data.SamplingRate.get_values(indices={"M":measurement})
 
@@ -332,6 +412,7 @@ def displaySOFAFile():
 
     plt.show()
 
+    # not so sure this is the best way to do this but it's probably fine
     nfft = len(SOFA_HRTF.Data.IR.get_values(indices={"M":measurement, "R":receiver, "E":emitter}))*8
     HRTF = np.fft.fft(SOFA_HRTF.Data.IR.get_values(indices={"M":measurement, "R":receiver, "E":emitter}),n=nfft, axis=0)
     print(HRTF)
@@ -340,6 +421,9 @@ def displaySOFAFile():
 
     f_axis = np.linspace(0,(SOFA_HRTF.Data.SamplingRate.get_values(indices={"M":measurement, "R":receiver, "E":emitter}))/2,len(HRTF_mag_dB))
     plt.semilogx(f_axis, HRTF_mag_dB)
+    ax = plt.gca()
+    ax.set_xlim([int(xlim_start), int(xlim_end)])
+    ax.set_ylim([int(ylim_start), int(ylim_end)])
     plt.grid()
     plt.grid(which='minor', color="0.9")
     plt.title('HRTF at M={0} for emitter {1}'.format(measurement, emitter))
@@ -349,7 +433,7 @@ def displaySOFAFile():
     plt.show()
 
     SOFA_HRTF.close()
-    plt.clf()
+    plt.close()
 
 def manualSOFADisplay(angle, elev, source_file, target_fs=48000):
     global Stereo3D
