@@ -15,116 +15,136 @@ from scipy import signal # <- fast convolution function
 from IPython.display import Audio # <- Audio listening (in notebook)
 import tkinter as tk
 from tkinter import filedialog
+from tkinter import ttk
 import pygame
 
+def centered_window(window): #https://www.geeksforgeeks.org/how-to-center-a-window-on-the-screen-in-tkinter/
+    window.update_idletasks()
+    width = window.winfo_width()
+    height = window.winfo_height()
+    screen_width = window.winfo_screenwidth()
+    screen_height = window.winfo_screenheight()
+    x = (screen_width - width) // 2
+    y = (screen_height - height) // 2
+    window.geometry(f"{width}x{height}+{x}+{y}")
+
 root = tk.Tk()
-root.geometry('800x1000')
-root.title('HRTF Functions')
+root.minsize(565, 870)
+root.grid_columnconfigure(0, weight=1)
+root.grid_rowconfigure(0, weight=1)
+centered_window(root)
+root.title("Garrett's Great HRTF Functions")
 
-titleLabel = tk.Label(root, text="\nGarrett's Great\nHRTF Functions\n")
-titleLabel.grid(row=0, column=1)
+rootFrame = tk.Frame(root, borderwidth=10, relief='flat')
+rootFrame.grid(row=0, column=0)
 
-selectHRTFFileButton = tk.Button(root, text='Select HRTF File', command=lambda:selectHRTFFile())
-selectHRTFFileLabel = tk.Label(root, text='HRTF file:\n', wraplength=120)
-selectHRTFFileButton.grid(row=3, column=0)
-selectHRTFFileLabel.grid(row=4, column=0)
+titleLabel = tk.Label(rootFrame, text="Garrett's Great\nHRTF Functions\n")
+titleLabel.grid(row=0, column=0, columnspan=3)
 
-selectSourceFileButton = tk.Button(root, text='Select source file', command=lambda:selectSourceFile())
-selectSourceFileLabel = tk.Label(root, text='Source file:\n', wraplength=120)
-selectSourceFileButton.grid(row=3, column=2)
-selectSourceFileLabel.grid(row=4, column=2)
+topSectionFrame = tk.Frame(rootFrame, borderwidth=10, relief='ridge')
+topSectionFrame.grid(row=1, column=0, columnspan=3)
 
-getHRTFFileDataButton = tk.Button(root, text='Get HRTF File Data', state='disabled', command=lambda:getHRTFFileData())
-getHRTFFileDataButton.grid(row=5, column=0)
+hrtfSourceSelectionFrame = tk.Frame(topSectionFrame, borderwidth=5, relief='flat')
+hrtfSourceSelectionFrame.grid(row=0, column=0, columnspan=3)
 
-getSourceFileDataButton = tk.Button(root, text='Get Source File Data', state='disabled', command=lambda:getSourceFileData())
-getSourceFileDataButton.grid(row=5, column=2)
+hrtfFrame = tk.Frame(hrtfSourceSelectionFrame, borderwidth=10, relief='flat')
+hrtfFrame.grid(row=0, column=0)
 
-timeDomainVisualHRTFButton = tk.Button(root, text='HRTF Time Domain Visualization', state='disabled', command=lambda:timeDomainVisualHRTF())
-timeDomainVisualHRTFButton.grid(row=6, column=0)
+selectHRTFFileButton = tk.Button(hrtfFrame, text='Select HRTF File', command=lambda:selectHRTFFile())
+selectHRTFFileLabel = tk.Label(hrtfFrame, text='HRTF file:\n', wraplength=120)
+selectHRTFFileButton.grid(row=0, column=0)
+selectHRTFFileLabel.grid(row=1, column=0)
+getHRTFFileDataButton = tk.Button(hrtfFrame, text='Get HRTF File Data', state='disabled', command=lambda:getHRTFFileData())
+getHRTFFileDataButton.grid(row=3, column=0)
+timeDomainVisualHRTFButton = tk.Button(hrtfFrame, text='HRTF Time Domain Visualization', state='disabled', command=lambda:timeDomainVisualHRTF())
+timeDomainVisualHRTFButton.grid(row=4, column=0)
+freqDomainVisualHRTFButton = tk.Button(hrtfFrame, text='HRTF Frequency Domain Visualization', state='disabled', command=lambda:freqDomainVisualHRTF())
+freqDomainVisualHRTFButton.grid(row=5, column=0)
 
-stereoToMonoButton = tk.Button(root, text='Source File Stereo -> Mono', state='disabled', command=lambda:stereoToMono())
-stereoToMonoButton.grid(row=6, column=2)
+sourceFrame = tk.Frame(hrtfSourceSelectionFrame, borderwidth=10, relief='flat')
+sourceFrame.grid(row=0, column=2)
+selectSourceFileButton = tk.Button(sourceFrame, text='Select source file', command=lambda:selectSourceFile())
+selectSourceFileLabel = tk.Label(sourceFrame, text='Source file:\n', wraplength=120)
+selectSourceFileButton.grid(row=0, column=2)
+selectSourceFileLabel.grid(row=1, column=2)
+getSourceFileDataButton = tk.Button(sourceFrame, text='Get Source File Data', state='disabled', command=lambda:getSourceFileData())
+getSourceFileDataButton.grid(row=2, column=2)
+stereoToMonoButton = tk.Button(sourceFrame, text='Source File Stereo -> Mono', state='disabled', command=lambda:stereoToMono())
+stereoToMonoButton.grid(row=3, column=2)
 
-freqDomainVisualHRTFButton = tk.Button(root, text='HRTF Frequency Domain Visualization', state='disabled', command=lambda:freqDomainVisualHRTF())
-freqDomainVisualHRTFButton.grid(row=7, column=0)
 
-resampleButton = tk.Button(root, text='Resample', state='disabled', command=lambda:fs_resample(sig_mono, fs_s, HRIR, fs_H))
-resampleButton.grid(row=8, column=1)
+hrtfOperationsFrame = tk.Frame(topSectionFrame, borderwidth=10, relief='flat')
+hrtfOperationsFrame.grid(row=1, column=1)
 
-timeDomainConvolveButton = tk.Button(root, text='Time Domain Convolve', state='disabled', command=lambda:timeDomainConvolve())
-timeDomainConvolveButton.grid(row=9, column=1)
-
-exportConvolvedButton = tk.Button(root, text='Export Convolved', state='disabled', command=lambda:exportConvolved())
-exportConvolvedButton.grid(row=10, column=1)
-
-# ---
-
-sectionalLabel = tk.Label(root, text='\n--------------------------------------------------')
-sectionalLabel.grid(row=11, column=1)
-
-sofaLabel = tk.Label(root, text="Garrett's Great\nSOFA Functions\n")
-sofaLabel.grid(row=12, column=1)
-
-selectSOFAFileButton = tk.Button(root, text='Select SOFA File', command=lambda:selectSOFAFile())
-selectSOFAFileLabel = tk.Label(root, text='SOFA file:\n', wraplength=120)
-selectSOFAFileButton.grid(row=13, column=1)
-selectSOFAFileLabel.grid(row=14, column=1)
-
-getSOFAFileMetadataButton = tk.Button(root, text='Get SOFA File Metadata', state='disabled', command=lambda:getSOFAFileMetadata())
-getSOFAFileMetadataButton.grid(row=15, column=0)
-
-getSOFAFileDimensionsButton = tk.Button(root, text='Get SOFA File Dimensions', state='disabled', command=lambda:getSOFAFileDimensions())
-getSOFAFileDimensionsButton.grid(row=15, column=2)
-
-sofaMeasurementTextBox = tk.Text(root, state='disabled', height=1, width=5)
-sofaMeasurementTextBox.grid(row=16, column=0)
-
-sofaMeasurementLabel = tk.Label(root, text='Measurement Index\n(default: 0)\n')
-sofaMeasurementLabel.grid(row=17, column=0)
-
-sofaEmitterTextBox = tk.Text(root, state='disabled', height=1, width=5)
-sofaEmitterTextBox.grid(row=16, column=2)
-
-sofaEmitterLabel = tk.Label(root, text='Emitter\n(default: 1)\n')
-sofaEmitterLabel.grid(row=17, column=2)
-
-frequencyXLimTextBox = tk.Text(root, state='disabled', height=1, width=15)
-frequencyXLimTextBox.grid(row=18, column=0)
-
-frequencyXLimLabel = tk.Label(root, text='Frequency Range (Hz)\n[start, end]')
-frequencyXLimLabel.grid(row=19, column=0)
-
-magnitudeYLimTextBox = tk.Text(root, state='disabled', height=1, width=15)
-magnitudeYLimTextBox.grid(row=18, column=2)
-
-magnitudeYLimLabel = tk.Label(root, text='Magnitude (dB)\n[start, end]')
-magnitudeYLimLabel.grid(row=19, column=2)
-
-sofaViewButton = tk.Button(root, text='View SOFA File', state='disabled', command=lambda:displaySOFAFile(frequencyXLimTextBox.get(1.0, 'end-1c'), magnitudeYLimTextBox.get(1.0, 'end-1c'), sofaMeasurementTextBox.get(1.0, 'end-1c'), sofaEmitterTextBox.get(1.0, 'end-1c')))
-sofaViewButton.grid(row=20, column=1)
-
-azimuthTextBox = tk.Text(root, state='disabled', height=1, width=5)
-azimuthTextBox.grid(row=21, column=0)
-
-azimuthLabel = tk.Label(root, text='Desired azimuth (in deg)')
-azimuthLabel.grid(row=22, column=0)
-
-elevationTextBox = tk.Text(root, state='disabled', height=1, width=5)
-elevationTextBox.grid(row=21, column=2)
-
-elevationLabel = tk.Label(root, text='Desired elevation (in deg)')
-elevationLabel.grid(row=22, column=2)
-
-sofaDisplayButton = tk.Button(root, text='Render Source with SOFA file', state='disabled', command=lambda:manualSOFADisplay(azimuthTextBox.get(1.0, 'end-1c'), elevationTextBox.get(1.0, 'end-1c'), source_file))
-sofaDisplayButton.grid(row=22, column=1)
-
+resampleButton = tk.Button(hrtfOperationsFrame, text='Resample', state='disabled', command=lambda:fs_resample(sig_mono, fs_s, HRIR, fs_H))
+resampleButton.grid(row=0, column=1)
+timeDomainConvolveButton = tk.Button(hrtfOperationsFrame, text='Time Domain Convolve', state='disabled', command=lambda:timeDomainConvolve())
+timeDomainConvolveButton.grid(row=1, column=1)
+exportConvolvedButton = tk.Button(hrtfOperationsFrame, text='Export Convolved', state='disabled', command=lambda:exportConvolved())
+exportConvolvedButton.grid(row=2, column=1)
 
 # ---
 
-quitButton = tk.Button(root, text='Quit', command=quit)
-quitButton.grid(row=40, column=1)
+sectionalLabel = tk.Label(rootFrame, text='\n')
+sectionalLabel.grid(row=2, column=0, columnspan=3)
 
+sofaLabel = tk.Label(rootFrame, text="Garrett's Great\nSOFA Functions\n")
+sofaLabel.grid(row=3, column=0, columnspan=3)
+
+bottomSectionFrame = tk.Frame(rootFrame, borderwidth=10, relief='ridge')
+bottomSectionFrame.grid(row=4, column=0, columnspan=3)
+selectSOFAFileButton = tk.Button(bottomSectionFrame, text='Select SOFA File', command=lambda:selectSOFAFile())
+selectSOFAFileLabel = tk.Label(bottomSectionFrame, text='SOFA file:\n', wraplength=240)
+selectSOFAFileButton.grid(row=0, column=0, columnspan=3)
+selectSOFAFileLabel.grid(row=1, column=0, columnspan=3)
+
+bottomLeftFrame = tk.Frame(bottomSectionFrame, borderwidth=10, relief='flat')
+bottomLeftFrame.grid(row=2, column=0)
+getSOFAFileMetadataButton = tk.Button(bottomLeftFrame, text='Get SOFA File Metadata', state='disabled', command=lambda:getSOFAFileMetadata())
+getSOFAFileMetadataButton.grid(row=0, column=0)
+sofaMeasurementTextBox = tk.Text(bottomLeftFrame, state='disabled', height=1, width=5)
+sofaMeasurementTextBox.grid(row=1, column=0)
+sofaMeasurementLabel = tk.Label(bottomLeftFrame, text='Measurement Index\n(default: 0)\n')
+sofaMeasurementLabel.grid(row=2, column=0)
+frequencyXLimTextBox = tk.Text(bottomLeftFrame, state='disabled', height=1, width=15)
+frequencyXLimTextBox.grid(row=3, column=0)
+frequencyXLimLabel = tk.Label(bottomLeftFrame, text='Frequency Range (Hz)\n[start, end]')
+frequencyXLimLabel.grid(row=4, column=0)
+azimuthTextBox = tk.Text(bottomLeftFrame, state='disabled', height=1, width=5)
+azimuthTextBox.grid(row=5, column=0)
+azimuthLabel = tk.Label(bottomLeftFrame, text='Desired azimuth (in deg)')
+azimuthLabel.grid(row=6, column=0)
+
+bottomRightFrame = tk.Frame(bottomSectionFrame, borderwidth=10, relief='flat')
+bottomRightFrame.grid(row=2, column=2)
+getSOFAFileDimensionsButton = tk.Button(bottomRightFrame, text='Get SOFA File Dimensions', state='disabled', command=lambda:getSOFAFileDimensions())
+getSOFAFileDimensionsButton.grid(row=0, column=0)
+sofaEmitterTextBox = tk.Text(bottomRightFrame, state='disabled', height=1, width=5)
+sofaEmitterTextBox.grid(row=1, column=0)
+sofaEmitterLabel = tk.Label(bottomRightFrame, text='Emitter\n(default: 1)\n')
+sofaEmitterLabel.grid(row=2, column=0)
+magnitudeYLimTextBox = tk.Text(bottomRightFrame, state='disabled', height=1, width=15)
+magnitudeYLimTextBox.grid(row=3, column=0)
+magnitudeYLimLabel = tk.Label(bottomRightFrame, text='Magnitude (dB)\n[start, end]')
+magnitudeYLimLabel.grid(row=4, column=0)
+elevationTextBox = tk.Text(bottomRightFrame, state='disabled', height=1, width=5)
+elevationTextBox.grid(row=5, column=0)
+elevationLabel = tk.Label(bottomRightFrame, text='Desired elevation (in deg)')
+elevationLabel.grid(row=6, column=0)
+
+sofaViewButton = tk.Button(bottomSectionFrame, text='View SOFA File', state='disabled', command=lambda:displaySOFAFile(frequencyXLimTextBox.get(1.0, 'end-1c'), magnitudeYLimTextBox.get(1.0, 'end-1c'), sofaMeasurementTextBox.get(1.0, 'end-1c'), sofaEmitterTextBox.get(1.0, 'end-1c')))
+sofaViewButton.grid(row=3, column=0, columnspan=3)
+sofaDisplayButton = tk.Button(bottomSectionFrame, text='Render Source with SOFA file', state='disabled', command=lambda:manualSOFADisplay(azimuthTextBox.get(1.0, 'end-1c'), elevationTextBox.get(1.0, 'end-1c'), source_file))
+sofaDisplayButton.grid(row=4, column=0, columnspan=3)
+
+# ---
+
+tutorialButton = tk.Button(rootFrame, text='Tutorial')
+tutorialButton.grid(row=5, column=0, sticky='W')
+
+quitButton = tk.Button(rootFrame, text='Quit', command=quit)
+quitButton.grid(row=5, column=2, sticky='E')
+""
 # ---
 
 def playAudio(audio_file):
