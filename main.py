@@ -682,5 +682,4 @@ def sofaHelpPage():
     prevButton = tk.Button(tutorialWindowContentFrame, text='<- Previous', command=lambda:hrtfHelpPage())
     prevButton.grid(row=8, column=0, sticky='W')
 
-
 root.mainloop()
