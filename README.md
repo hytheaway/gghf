@@ -1,2 +1,2 @@
 # gghf
-garrett's great hrtf functions
+garrett's great hrtf (& sofa) functions
