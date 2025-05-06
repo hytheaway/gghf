@@ -1,3 +1,4 @@
+altgraph==0.17.4
 asttokens==3.0.0
 audioop-lts==0.2.1
 audioread==3.0.1
@@ -21,6 +22,7 @@ kiwisolver==1.4.8
 lazy_loader==0.4
 librosa==0.11.0
 llvmlite==0.44.0
+macholib==1.16.3
 matplotlib==3.10.1
 matplotlib-inline==0.1.7
 msgpack==1.1.0
@@ -39,6 +41,8 @@ pure_eval==0.2.3
 pycparser==2.22
 pygame==2.6.1
 Pygments==2.19.1
+pyinstaller==6.13.0
+pyinstaller-hooks-contrib==2025.4
 pyparsing==3.2.3
 PyQt6==6.9.0
 PyQt6-Qt6==6.9.0

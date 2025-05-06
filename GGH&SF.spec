@@ -35,11 +35,11 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=['/Users/garrett/Library/CloudStorage/Dropbox/GitHub Repositories/gghf/happyday.ico'],
+    icon=[r'C:\Users\hythe\Dropbox\GitHub_Repositories\gghf\happyday.ico'],
 )
 app = BUNDLE(
     exe,
     name='GGH&SF.app',
-    icon='/Users/garrett/Library/CloudStorage/Dropbox/GitHub Repositories/gghf/happyday.ico',
+    icon=r'C:\Users\hythe\Dropbox\GitHub_Repositories\gghf\happyday.ico',
     bundle_identifier=None,
 )

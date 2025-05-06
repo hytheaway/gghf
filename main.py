@@ -19,6 +19,7 @@ import tkinter as tk
 from tkinter import filedialog
 from tkinter import font
 import pygame
+import pyinstaller
 import PyQt6
 from PyQt6 import QtWidgets
 matplotlib.use('QtAgg')
