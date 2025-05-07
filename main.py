@@ -14,7 +14,6 @@ import soundfile as sf # <- read audio
 import sofa # <- read SOFA HRTFs
 import librosa # <- resample function
 from scipy import signal # <- fast convolution function
-from IPython.display import Audio # <- Audio listening (in notebook)
 import tkinter as tk
 from tkinter import filedialog
 from tkinter import font
@@ -45,7 +44,6 @@ centered_window(root)
 root.title("GGH&SF")
 default_font = font.nametofont("TkDefaultFont")
 parse_font_dict = default_font.actual()
-# print(parse_font_dict)
 
 rootFrame = tk.Frame(root, borderwidth=10, relief='flat')
 rootFrame.grid(row=0, column=0)
@@ -153,14 +151,14 @@ tutorialButton.grid(row=5, column=0, sticky='W')
 quitButton = tk.Button(rootFrame, text='Quit', command=lambda:root.destroy())
 quitButton.grid(row=5, column=2, sticky='E')
 
-class ToolTip(object):
+class ToolTip(object): #https://stackoverflow.com/questions/20399243/display-message-when-hovering-over-something-with-mouse-cursor-in-python
     def __init__(self, widget):
         self.widget = widget
         self.tipwindow = None
         self.id = None
         self.x = self.y = 0
 
-    def show_tooltip(self, text): #https://stackoverflow.com/questions/20399243/display-message-when-hovering-over-something-with-mouse-cursor-in-python
+    def show_tooltip(self, text):
         self.text = text
         if self.tipwindow  or not self.text:
             return
@@ -280,8 +278,6 @@ def timeDomainVisualHRTF():
 def freqDomainVisualHRTF():
     nfft = len(HRIR)*8
     HRTF = np.fft.fft(HRIR,n=nfft, axis=0)
-    # print(HRIR)
-    # print(HRTF)
     HRTF_mag = (2/nfft)*np.abs(HRTF[0:int(len(HRTF)/2)+1,:])
     HRTF_mag_dB = 20*np.log10(HRTF_mag)
 
@@ -413,11 +409,6 @@ def getSOFAFileMetadata():
     windowSOFAMetadataLabel = tk.Text(newWindow, width=100, height=100, wrap='word', yscrollcommand=v.set)
     windowSOFAMetadataLabel.insert('end', str(myString))
     windowSOFAMetadataLabel.pack()
-    # for attr in sofa.Database.open(sofa_file).Data.dump():
-    #     myString2 = myString2 + ("{0}: {1}".format(attr, sofa.Database.open(sofa_file).Data.dump(attr))) + '\n'
-    # windowSOFADataLabel = tk.Text(newWindow, width=100, height=100, wrap='word', yscrollcommand=v.set)
-    # windowSOFADataLabel.insert('end', str(myString2))
-    # windowSOFADataLabel.pack()
 
     v.config(command=windowSOFAMetadataLabel.yview)
 

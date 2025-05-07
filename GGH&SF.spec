@@ -48,3 +48,10 @@ exe = EXE(
     entitlements_file=None,
     icon=['happyday.ico'],
 )
+
+app = BUNDLE(
+    exe,
+    name='GGH&SF.app',
+    icon='happyday.ico',
+    bundle_identifier=None,
+)

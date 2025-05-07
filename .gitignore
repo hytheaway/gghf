@@ -1,6 +1,6 @@
 .DS_Store
-__pycache__
 build
 dist
+__pycache__
 macOS_GGHSF.zip
 windows_GGHSF.zip
