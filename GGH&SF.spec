@@ -6,7 +6,7 @@ a = Analysis(
     pathex=[],
     binaries=[],
     datas=[],
-    hiddenimports=[],
+    hiddenimports=['pyi_splash'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -15,12 +15,23 @@ a = Analysis(
     optimize=0,
 )
 pyz = PYZ(a.pure)
+splash = Splash(
+    'loading_icon.png',
+    binaries=a.binaries,
+    datas=a.datas,
+    text_pos=(10, 20),
+    text_size=12,
+    minify_script=True,
+    always_on_top=True,
+)
 
 exe = EXE(
     pyz,
     a.scripts,
     a.binaries,
     a.datas,
+    splash,
+    splash.binaries,
     [],
     name='GGH&SF',
     debug=False,
@@ -35,11 +46,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=[r'C:\Users\hythe\Dropbox\GitHub_Repositories\gghf\happyday.ico'],
-)
-app = BUNDLE(
-    exe,
-    name='GGH&SF.app',
-    icon=r'C:\Users\hythe\Dropbox\GitHub_Repositories\gghf\happyday.ico',
-    bundle_identifier=None,
+    icon=['happyday.ico'],
 )

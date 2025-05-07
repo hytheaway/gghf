@@ -19,10 +19,13 @@ import tkinter as tk
 from tkinter import filedialog
 from tkinter import font
 import pygame
-import pyinstaller
+# import pyinstaller
+import pyi_splash
 import PyQt6
 from PyQt6 import QtWidgets
 matplotlib.use('QtAgg')
+
+pyi_splash.close()
 
 def centered_window(window): #https://www.geeksforgeeks.org/how-to-center-a-window-on-the-screen-in-tkinter/
     window.update_idletasks()
