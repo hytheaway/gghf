@@ -1,4 +1,4 @@
-# gghf
+# ggh&sf
 garrett's great hrtf (& sofa) functions
 
 the best (and only) dedicated tool for analyzing both hrtf files and sofa files, while also containing the ability to convolve them and export the convolutions! does it ever get better than this?
