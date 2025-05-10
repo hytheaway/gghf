@@ -1,0 +1,16 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: Garrett's Great HRTF (& SOFA) Functions
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Garrett
+    family-names: Treanor
+    email: garrettkft@outlook.com
+    orcid: 'https://orcid.org/0009-0005-0573-6011'
+repository-code: 'https://github.com/hytheaway/gghf'
+url: 'https://hytheaway.github.io/projects/gghsf.html'
