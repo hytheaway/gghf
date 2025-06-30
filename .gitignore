@@ -1,6 +1,6 @@
 .DS_Store
-build
-dist
+.venv
+.vscode
+_pyinstaller
 __pycache__
-macOS_GGHSF.zip
-windows_GGHSF.zip
+_nuitka
