@@ -367,7 +367,7 @@ def selectSOFAFile():
             create_tooltip(selectSOFAFileLabel, text=str(sofa_file))
             getSOFAFileMetadataButton.config(state='active')
             getSOFAFileDimensionsButton.config(state='active')
-            sofaDisplayButton.config(state='active')
+            sofaRenderButton.config(state='active')
             sofaViewButton.config(state='active')
             sofaSaveButton.config(state='active')
             sofaMeasurementTextBox.config(state='normal')
@@ -447,65 +447,121 @@ def exportSOFAConvolved(source_file_name, angle_label, elev_label, audioContent,
         windowSOFAInfoLabel = tk.Label(newWindow, text='Not rendered: Export directory not given.')
         windowSOFAInfoLabel.pack()
 
-def plot_coordinates(coords, plot_title, in_sofa_file):
-    x0 = coords
-    n0 = coords
-    fig = plt.figure(figsize=(10,7))
-    window_title = 'SOFA Source Positions for ' + os.path.basename(in_sofa_file)
-    fig.canvas.manager.set_window_title(str(window_title))
+def plot_coordinates(in_sofa_file, fig):
+    """
+    Plots source coordinate positions of a SOFA file.
+
+    Args:
+        in_sofa_file (str): Path to SOFA file to be plotted.
+        fig (matplotlib.figure.Figure): Figure for the data to be plotted on. 
+
+    Returns:
+        mpl_toolkits.mplot3d.art3d.Line3DCollection: 3D plot data
+    """    
+    SOFA_HRTF = sofa.Database.open(sofa_file)
+    x0 = SOFA_HRTF.Source.Position.get_values(system='cartesian')
+    n0 = x0
     ax = fig.add_subplot(111, projection='3d')
     q = ax.quiver(x0[:, 0], x0[:, 1], x0[:, 2], 
                   n0[:, 0], n0[:, 1], n0[:, 2], 
                   length=0.1)
     plt.xlabel('x (m)')
     plt.ylabel('y (m)')
-    plt.title(plot_title)
+    plt.title('Source positions for: ' + str(os.path.basename(in_sofa_file)))
     return q
 
-def displaySOFAFile(xlim, ylim, measurement=0, emitter=1):
+def computeHRIR(in_sofa_file, measurement=0):
+    """
+    Computes the HRIR for a given SOFA file at the measurement and emitter given. Returns t (time, x-axis), receiver_dimensions, and SOFA_HRTF.Data.IR
+
+    Args:
+        in_sofa_file (str): Path to SOFA file
+        measurement (int, optional): Measurement value to be operated upon. Defaults to 0.
+
+    Returns:
+        ndarray: t (time, to be used on the x-axis)
+        int: receiver dimension
+        sofa.access.variables.Variable: IR from the SOFA file to be plotted against t
+    """    
+    SOFA_HRTF = sofa.Database.open(in_sofa_file)
+    
+    receiver_dimensions = SOFA_HRTF.Dimensions.R
+    t = np.arange(0, SOFA_HRTF.Dimensions.N)*SOFA_HRTF.Data.SamplingRate.get_values(indices={"M":measurement})
+    
+    return t, receiver_dimensions, SOFA_HRTF.Data.IR
+
+def computeHRTF(in_sofa_file, measurement=0, emitter=1):
+    """
+    Computes the HRTF for a given SOFA file at the measurement and emitter given. Returns f_axis (frequency in Hz, usually used on x-axis) and HRTF_mag_dB (magnitude in dB, usually used on y-axis)
+
+    Args:
+        in_sofa_file (str): Path to SOFA file
+        measurement (int, optional): Measurement value to be operated upon. Defaults to 0.
+        emitter (int, optional): Emitter to be operated upon. Defaults to 1.
+
+    Returns:
+        ndarray: Frequency axis, usually used on x-axis
+        ndarray: Magnitude in dB, usually used on y-axis
+    """    
+    SOFA_HRTF = sofa.Database.open(in_sofa_file)
+    receiver_legend = []
+    
+    for receiver in np.arange(SOFA_HRTF.Dimensions.R):
+        receiver_legend.append("Receiver {0}".format(receiver))
+    
+    nfft = len(SOFA_HRTF.Data.IR.get_values(indices={"M":measurement, "R":receiver, "E":emitter}))*8
+    HRTF = np.fft.fft(SOFA_HRTF.Data.IR.get_values(indices={"M":measurement, "R":receiver, "E":emitter}), n=nfft, axis=0)
+    HRTF_mag = (2/nfft)*np.abs(HRTF[0:int(len(HRTF)/2)+1])
+    HRTF_mag_dB = 20*np.log10(HRTF_mag)
+    f_axis = np.linspace(0, (SOFA_HRTF.Data.SamplingRate.get_values(indices={"M":measurement, "R":receiver, "E":emitter}))/2, len(HRTF_mag_dB))
+    
+    return f_axis, HRTF_mag_dB
+
+def sanitizeBounds(bounds):
+    """
+    Sanitizes and splits bounds from the user-input frequency and magnitude ranges to account for whitespace, brackets, and commas.
+
+    Args:
+        bounds (str): Lower and upper bound to be sanitized and split.
+
+    Returns:
+        str: lower_limit, upper_limit
+    """    
+    bounds = str(bounds)
+    for char in bounds:
+        if char == '[' or char == ']' or char == ' ':
+            bounds = bounds.replace(char, '')
+    for i in range(0, len(bounds)):
+        if bounds[i] == ',':
+            lower_limit = bounds[0:i]
+            upper_limit = bounds[i+1:]
+    
+    return lower_limit, upper_limit
+
+def viewSOFAGraphs(xlim, ylim, measurement, emitter):
     if not xlim:
         xlim = '20, 20000'
     if not ylim:
         ylim = '-150, 0'
-    if measurement == '':
+    if not measurement:
         measurement = 0
-    if emitter == '':
+    if not emitter:
         emitter = 1
-    SOFA_HRTF = sofa.Database.open(sofa_file)
-
-    # plot source coordinates
-    source_positions = SOFA_HRTF.Source.Position.get_values(system='cartesian')
-    sofa_positions_plot_title = 'Source positions for: ' + str(os.path.basename(sofa_file))
-    plot_coordinates(source_positions, str(sofa_positions_plot_title), sofa_file)
-
-    measurement = measurement
-    emitter = emitter
+    
     legend = []
+    xlim_start, xlim_end = sanitizeBounds(xlim)
+    ylim_start, ylim_end = sanitizeBounds(ylim)
+    
+    # plot source coordinates
+    sofa_positions_window_title = 'SOFA Source Positions for ' + os.path.basename(sofa_file)
+    sofa_pos_fig = plt.figure(figsize=(10, 7), num=str(sofa_positions_window_title))
+    plot_coordinates(sofa_file, sofa_pos_fig)
 
-    xlim = str(xlim)
-    for char in xlim:
-        if char == '[' or char == ']' or char == ' ':
-            xlim = xlim.replace(char, '')
-    for i in range(0, len(xlim)):
-        if xlim[i] == ',':
-            xlim_start = xlim[0:i]
-            xlim_end = xlim[i+1:]
-
-    ylim = str(ylim)
-    for char in ylim:
-        if char == '[' or char == ']' or char == ' ':
-            ylim = ylim.replace(char, '')
-    for i in range(0, len(ylim)):
-        if ylim[i] == ',':
-            ylim_start = ylim[0:i]
-            ylim_end = ylim[i+1:]
-
-    t = np.arange(0, SOFA_HRTF.Dimensions.N)*SOFA_HRTF.Data.SamplingRate.get_values(indices={"M":measurement})
-
-    hrir_plot_title = 'Head-Related Impulse Response for: ' + os.path.basename(sofa_file)
-    plt.figure(figsize=(15, 5), num=str(hrir_plot_title))
-    for receiver in np.arange(SOFA_HRTF.Dimensions.R):
-        plt.plot(t, SOFA_HRTF.Data.IR.get_values(indices={"M":measurement, "R":receiver, "E":emitter}))
+    hrir_window_title = 'Head-Related Impulse Response for: ' + os.path.basename(sofa_file)
+    plt.figure(figsize=(15, 5), num=str(hrir_window_title))
+    t, receiver_dimensions, ir = computeHRIR(sofa_file, measurement)
+    for receiver in np.arange(receiver_dimensions):
+        plt.plot(t, ir.get_values(indices={"M":measurement, "R":receiver, "E":emitter}))
         legend.append('Receiver {0}'.format(receiver))
     plt.title('{0}: HRIR at M={1} for emitter {2}'.format(os.path.basename(sofa_file), measurement, emitter))
     plt.legend(legend)
@@ -513,15 +569,9 @@ def displaySOFAFile(xlim, ylim, measurement=0, emitter=1):
     plt.ylabel(r'$h(t)$')
     plt.grid()
 
-    # not so sure this is the best way to do this but it's probably fine
-    nfft = len(SOFA_HRTF.Data.IR.get_values(indices={"M":measurement, "R":receiver, "E":emitter}))*8
-    HRTF = np.fft.fft(SOFA_HRTF.Data.IR.get_values(indices={"M":measurement, "R":receiver, "E":emitter}),n=nfft, axis=0)
-    HRTF_mag = (2/nfft)*np.abs(HRTF[0:int(len(HRTF)/2)+1])
-    HRTF_mag_dB = 20*np.log10(HRTF_mag)
-
-    hrtf_plot_title = 'Head-Related Transfer Function for: ' + os.path.basename(sofa_file)
-    plt.figure(figsize=(15, 5), num=str(hrtf_plot_title))
-    f_axis = np.linspace(0,(SOFA_HRTF.Data.SamplingRate.get_values(indices={"M":measurement, "R":receiver, "E":emitter}))/2,len(HRTF_mag_dB))
+    hrtf_window_title = 'Head-Related Transfer Function for: ' + os.path.basename(sofa_file)
+    plt.figure(figsize=(15, 5), num=str(hrtf_window_title))
+    f_axis, HRTF_mag_dB = computeHRTF(sofa_file, measurement, emitter)
     plt.semilogx(f_axis, HRTF_mag_dB)
     ax = plt.gca()
     ax.set_xlim([int(xlim_start), int(xlim_end)])
@@ -534,10 +584,9 @@ def displaySOFAFile(xlim, ylim, measurement=0, emitter=1):
     plt.legend(['Left','Right'])
     plt.show()
 
-    SOFA_HRTF.close()
     plt.close()
     
-def saveSOFAFile(xlim, ylim, measurement=0, emitter=1):
+def saveSOFAGraphs(xlim, ylim, measurement=0, emitter=1):
     plt.close()
     export_directory = filedialog.askdirectory(title='Select Save Directory', initialdir=os.path.dirname(sofa_file))
     if not export_directory:
@@ -554,25 +603,17 @@ def saveSOFAFile(xlim, ylim, measurement=0, emitter=1):
         xlim = '20, 20000'
     if not ylim:
         ylim = '-150, 0'
-    if measurement == '':
+    if not measurement:
         measurement = 0
-    if emitter == '':
+    if not emitter:
         emitter = 1
-    SOFA_HRTF = sofa.Database.open(sofa_file)
+    legend = []
 
     # plot source coordinates
-    x0 = SOFA_HRTF.Source.Position.get_values(system='cartesian')
-    n0 = SOFA_HRTF.Source.Position.get_values(system='cartesian')
-    fig = plt.figure(figsize=(10,7))
-    window_title = 'SOFA Source Positions for ' + os.path.basename(sofa_file)
-    fig.canvas.manager.set_window_title(str(window_title))
-    ax = fig.add_subplot(111, projection='3d')
-    q = ax.quiver(x0[:, 0], x0[:, 1], x0[:, 2], 
-                  n0[:, 0], n0[:, 1], n0[:, 2], 
-                  length=0.1)
-    plt.xlabel('x (m)')
-    plt.ylabel('y (m)')
-    plt.title('Source positions for: ' + str(os.path.basename(sofa_file)))
+    sofa_positions_window_title = 'SOFA Source Positions for ' + os.path.basename(sofa_file)
+    sofa_pos_fig = plt.figure(figsize=(10, 7), num=str(sofa_positions_window_title))
+    plot_coordinates(sofa_file, sofa_pos_fig)
+    
     unedited_sofa_filename = os.path.basename(sofa_file)
     for letter in unedited_sofa_filename:
         if letter == '':
@@ -581,54 +622,28 @@ def saveSOFAFile(xlim, ylim, measurement=0, emitter=1):
     sofa_pos_export_filename = os.path.join(str(export_directory), sofa_pos_indiv_filename)
     plt.savefig(sofa_pos_export_filename)
 
-    measurement = measurement
-    emitter = emitter
-    legend = []
-
-    xlim = str(xlim)
-    for char in xlim:
-        if char == '[' or char == ']' or char == ' ':
-            xlim = xlim.replace(char, '')
-    for i in range(0, len(xlim)):
-        if xlim[i] == ',':
-            xlim_start = xlim[0:i]
-            xlim_end = xlim[i+1:]
-
-    ylim = str(ylim)
-    for char in ylim:
-        if char == '[' or char == ']' or char == ' ':
-            ylim = ylim.replace(char, '')
-    for i in range(0, len(ylim)):
-        if ylim[i] == ',':
-            ylim_start = ylim[0:i]
-            ylim_end = ylim[i+1:]
-
-    t = np.arange(0, SOFA_HRTF.Dimensions.N)*SOFA_HRTF.Data.SamplingRate.get_values(indices={"M":measurement})
-
-    hrir_window_title = 'Head-Related Impulse Response for ' + os.path.basename(sofa_file)
-    plt.figure(figsize=(15, 5), num=str(hrir_window_title))
-    for receiver in np.arange(SOFA_HRTF.Dimensions.R):
-        plt.plot(t, SOFA_HRTF.Data.IR.get_values(indices={"M":measurement, "R":receiver, "E":emitter}))
+    xlim_start, xlim_end = sanitizeBounds(xlim)
+    ylim_start, ylim_end = sanitizeBounds(ylim)
+    
+    hrir_plot_title = 'Head-Related Impulse Response for: ' + os.path.basename(sofa_file)
+    plt.figure(figsize=(15, 5), num=str(hrir_plot_title))
+    t, receiver_dimensions, ir = computeHRIR(sofa_file, measurement)
+    for receiver in np.arange(receiver_dimensions):
+        plt.plot(t, ir.get_values(indices={"M":measurement, "R":receiver, "E":emitter}))
         legend.append('Receiver {0}'.format(receiver))
     plt.title('{0}: HRIR at M={1} for emitter {2}'.format(os.path.basename(sofa_file), measurement, emitter))
     plt.legend(legend)
     plt.xlabel('$t$ in s')
     plt.ylabel(r'$h(t)$')
     plt.grid()
+    
     sofa_hrir_indiv_filename = 'Head-Related_Impulse_Response_for_' + unedited_sofa_filename + '.png'
     sofa_hrir_export_filename = os.path.join(str(export_directory), sofa_hrir_indiv_filename)
     plt.savefig(sofa_hrir_export_filename)
     
-
-    # not so sure this is the best way to do this but it's probably fine
-    nfft = len(SOFA_HRTF.Data.IR.get_values(indices={"M":measurement, "R":receiver, "E":emitter}))*8
-    HRTF = np.fft.fft(SOFA_HRTF.Data.IR.get_values(indices={"M":measurement, "R":receiver, "E":emitter}),n=nfft, axis=0)
-    HRTF_mag = (2/nfft)*np.abs(HRTF[0:int(len(HRTF)/2)+1])
-    HRTF_mag_dB = 20*np.log10(HRTF_mag)
-
-    hrtf_window_title = 'Head-Related Transfer Function for ' + os.path.basename(sofa_file)
+    hrtf_window_title = 'Head-Related Transfer Function for: ' + os.path.basename(sofa_file)
     plt.figure(figsize=(15, 5), num=str(hrtf_window_title))
-    f_axis = np.linspace(0,(SOFA_HRTF.Data.SamplingRate.get_values(indices={"M":measurement, "R":receiver, "E":emitter}))/2,len(HRTF_mag_dB))
+    f_axis, HRTF_mag_dB = computeHRTF(sofa_file, measurement, emitter)
     plt.semilogx(f_axis, HRTF_mag_dB)
     ax = plt.gca()
     ax.set_xlim([int(xlim_start), int(xlim_end)])
@@ -639,18 +654,17 @@ def saveSOFAFile(xlim, ylim, measurement=0, emitter=1):
     plt.xlabel('Frequency (Hz)')
     plt.ylabel('Magnitude (dB)')
     plt.legend(['Left','Right'])
-    # plt.show()
+
     sofa_hrtf_indiv_filename = 'Head-Related_Transfer_Function_for_' + unedited_sofa_filename + '.png'
     sofa_hrtf_export_filename = os.path.join(str(export_directory), sofa_hrtf_indiv_filename)
     plt.savefig(sofa_hrtf_export_filename)
 
-    SOFA_HRTF.close()
     plt.close()
     
     messageWindow('Successfully exported to:\n' + (os.path.basename(sofa_file) + '-measurements'), title='Export Successful', width=400, tooltip_text=export_directory)
 
 
-def manualSOFADisplay(angle, elev, source_file, target_fs=48000):
+def renderWithSOFA(angle, elev, source_file, target_fs=48000):
     global Stereo3D
     try:
         isinstance(source_file, str)
@@ -1094,8 +1108,8 @@ hrtfFrame = tk.Frame(hrtfSourceSelectionFrame, borderwidth=10, relief='flat')
 hrtfFrame.grid(row=0, column=0)
 
 selectHRTFFileButton = tk.Button(hrtfFrame, text='Select HRTF File (.wav)', command=lambda:selectHRTFFile())
-selectHRTFFileLabel = tk.Label(hrtfFrame, text='HRTF file:\n', wraplength=120)
 selectHRTFFileButton.grid(row=0, column=0)
+selectHRTFFileLabel = tk.Label(hrtfFrame, text='HRTF file:\n', wraplength=120)
 selectHRTFFileLabel.grid(row=1, column=0)
 getHRTFFileDataButton = tk.Button(hrtfFrame, text='Get HRTF File Data', state='disabled', command=lambda:getHRTFFileData())
 getHRTFFileDataButton.grid(row=3, column=0)
@@ -1184,12 +1198,12 @@ elevationTextBox.grid(row=5, column=0)
 elevationLabel = tk.Label(bottomRightFrame, text='Desired elevation (in deg)')
 elevationLabel.grid(row=6, column=0)
 
-sofaViewButton = tk.Button(bottomSectionFrame, text='View SOFA File', state='disabled', command=lambda:displaySOFAFile(freqXLimStringVar.get(), magYLimStringVar.get(), sofaMeasurementStringVar.get(), sofaEmitterStringVar.get()))
+sofaViewButton = tk.Button(bottomSectionFrame, text='View SOFA File', state='disabled', command=lambda:viewSOFAGraphs(freqXLimStringVar.get(), magYLimStringVar.get(), sofaMeasurementStringVar.get(), sofaEmitterStringVar.get()))
 sofaViewButton.grid(row=3, column=0, columnspan=2)
-sofaSaveButton = tk.Button(bottomSectionFrame, text='Save all SOFA graphs', state='disabled', command=lambda:saveSOFAFile(freqXLimStringVar.get(), magYLimStringVar.get(), sofaMeasurementStringVar.get(), sofaEmitterStringVar.get()))
+sofaSaveButton = tk.Button(bottomSectionFrame, text='Save all SOFA graphs', state='disabled', command=lambda:saveSOFAGraphs(freqXLimStringVar.get(), magYLimStringVar.get(), sofaMeasurementStringVar.get(), sofaEmitterStringVar.get()))
 sofaSaveButton.grid(row=3, column=1, columnspan=2)
-sofaDisplayButton = tk.Button(bottomSectionFrame, text='Render Source with SOFA file', state='disabled', command=lambda:manualSOFADisplay(azimuthStringVar.get(), elevationStringVar.get(), source_file))
-sofaDisplayButton.grid(row=4, column=0, columnspan=3)
+sofaRenderButton = tk.Button(bottomSectionFrame, text='Render Source with SOFA file', state='disabled', command=lambda:renderWithSOFA(azimuthStringVar.get(), elevationStringVar.get(), source_file))
+sofaRenderButton.grid(row=4, column=0, columnspan=3)
 
 tutorialButton = tk.Button(rootFrame, text='Help', command=lambda:createHelpWindow())
 tutorialButton.grid(row=5, column=0, sticky='W')
