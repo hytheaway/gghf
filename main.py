@@ -865,6 +865,7 @@ def errorWindow(error_message='Generic Error Message', title='Error', width=300,
     if tooltip_text:
         create_tooltip(errorMessageLabel, text=str(tooltip_text))
     errorMessageLabel.pack()
+    errorWindow.focus_force()
     return -1
 
 def messageWindow(message='Generic Message', title='Title', width=300, height=100, **kwargs):
@@ -894,6 +895,7 @@ def messageWindow(message='Generic Message', title='Title', width=300, height=10
     if tooltip_text:
         create_tooltip(messageLabel, text=str(tooltip_text))
     messageLabel.pack()
+    messageWindow.focus_force()
     return -1
 
 def callback_url(url):
@@ -1035,7 +1037,7 @@ def generalHelpPage():
     commonHelpDescTutorialLabel = tk.Label(tutorialWindowContentFrame, text='''
     * 'Source File Stereo -> Mono' must ALWAYS be pressed before using HRTF functions!
     * You can use 'Tab' to select a subsequent text box.
-    * The default values for SOFA functions are as follow:
+    * The default values for SOFA functions are as follows:
         - Measurement Index: 0
         - Emitter: 1
         - Frequency Range (Hz): 20, 20000
@@ -1063,7 +1065,7 @@ def generalHelpPage():
 # matplotlib.use('QtAgg')
 
 root = tk.Tk()
-root.minsize(565, 890)
+root.minsize(565, 910)
 root.grid_columnconfigure(0, weight=1)
 root.grid_rowconfigure(0, weight=1)
 centered_window(root)
