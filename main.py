@@ -931,7 +931,7 @@ def hrtfHelpPage():
     hrtfFrequencyDomainVisualizationTutorialLabel = tk.Label(tutorialWindowContentFrame, text='"HRTF Frequency Domain Visualization"\nFrequency domain plot of loaded HRTF.\n')
     hrtfFrequencyDomainVisualizationTutorialLabel.grid(row=4, column=0)
 
-    selectSourceFileTutorialLabel = tk.Label(tutorialWindowContentFrame, text='"Select Source File"\nPresents dialogue box for selecting a source file.\nOnly takes .wav files.\nUsed for convolving with loaded HRTF.\nAlso used for convolving with loaded SOFA file.\n')
+    selectSourceFileTutorialLabel = tk.Label(tutorialWindowContentFrame, text='"Select Source File (.wav)"\nPresents dialogue box for selecting a source file.\nOnly takes .wav files.\nUsed for convolving with loaded HRTF.\nAlso used for convolving with loaded SOFA file.\n')
     selectSourceFileTutorialLabel.grid(row=1, column=2)
     getSourceFileDataTutorialLabel = tk.Label(tutorialWindowContentFrame, text='"Get Source File Data"\nPresents info about source file, including:\n- Sample rate\n- Data dimension (num samples, num channels)\n- Ability to play loaded selected file.\n')
     getSourceFileDataTutorialLabel.grid(row=2, column=2)
@@ -961,7 +961,7 @@ def sofaHelpPage():
     getSOFAFileMetadataTutorialLabel.grid(row=2, column=0)
     sofaMeasurementTutorialLabel = tk.Label(tutorialWindowContentFrame, text='"Measurement index"\nChoose the measurement index to be used when viewing plot data.\nCheck .SOFA file dimensions for measurement indices.\n')
     sofaMeasurementTutorialLabel.grid(row=3, column=0)
-    frequencyXLimTutorialLabel = tk.Label(tutorialWindowContentFrame, text='"Frequency Range (Hz)"\nConfigurable range for x-axis of .SOFA file plot.\n')
+    frequencyXLimTutorialLabel = tk.Label(tutorialWindowContentFrame, text='"Frequency Range (Hz)"\nConfigurable range for x-axis of .SOFA file plot.\nDefaults to [20, 20000].\n')
     frequencyXLimTutorialLabel.grid(row=4, column=0)
     desiredAzimuthTutorialLabel = tk.Label(tutorialWindowContentFrame, text='"Desired azimuth (in deg)"\nEnter azimuth for rendering with source file. Defaults to 0deg.\nSelectable azimuth for viewing .SOFA file plot, and for rendering.\n')
     desiredAzimuthTutorialLabel.grid(row=5, column=0)
@@ -970,13 +970,15 @@ def sofaHelpPage():
     getSOFAFileDimensionsTutorialLabel.grid(row=2, column=2)
     sofaEmitterTutorialLabel = tk.Label(tutorialWindowContentFrame, text='"Emitter"\nChoose the emitter to be used when viewing plot data.\nCheck .SOFA file dimensions for emitters.\n')
     sofaEmitterTutorialLabel.grid(row=3, column=2)
-    magnitudeYLimTutorialLabel = tk.Label(tutorialWindowContentFrame, text='"Magnitude (dB)"\nConfigurable range for y-axis of .SOFA file plot.\n')
+    magnitudeYLimTutorialLabel = tk.Label(tutorialWindowContentFrame, text='"Magnitude (dB)"\nConfigurable range for y-axis of .SOFA file plot.\nDefaults to [-150, 0].\n')
     magnitudeYLimTutorialLabel.grid(row=4, column=2)
     desiredElevationTutorialLabel = tk.Label(tutorialWindowContentFrame, text='"Desired elevation (in deg)"\nEnter elevation for rendering with source file. Defaults to 0deg.\nSelectable elevation for viewing .SOFA file plot, and for rendering.\n')
     desiredElevationTutorialLabel.grid(row=5, column=2)
 
     viewSOFAFileTutorialLabel = tk.Label(tutorialWindowContentFrame, text='"View SOFA File"\nTakes the above selected values\nand presents a 3D view of the .SOFA file,\n in addition to individual measurements\nfrom the .SOFA file.\n')
-    viewSOFAFileTutorialLabel.grid(row=6, column=1)
+    viewSOFAFileTutorialLabel.grid(row=6, column=0)
+    saveSOFAFileTutorialLabel = tk.Label(tutorialWindowContentFrame, text='"Save all SOFA graphs"\nSaves graphs/plots for source positions,\nhead-related impulse response, and head-related transfer function\nfor the provided azimuth, elevation, emitter, and measurement index to\nthe provided directory.\n')
+    saveSOFAFileTutorialLabel.grid(row=6, column=2)
     renderSOFATutorialLabel = tk.Label(tutorialWindowContentFrame, text='"Render Source with SOFA File"\nConvolves the source file with\nthe desired values in the .SOFA file.\n')
     renderSOFATutorialLabel.grid(row=7, column=1)
 
@@ -1027,20 +1029,36 @@ def generalHelpPage():
     default to 0 and 1 respectively. 
     ''')
     howToDescTutorialLabel.grid(row=2, column=2)
+    
+    commonHelpTitleTutorialLabel = tk.Label(tutorialWindowContentFrame, text='Tips/Tricks', font=("TkDefaultFont", str(parse_font_dict['size'] + 2), "bold"))
+    commonHelpTitleTutorialLabel.grid(row=3,column=0)
+    commonHelpDescTutorialLabel = tk.Label(tutorialWindowContentFrame, text='''
+    * 'Source File Stereo -> Mono' must ALWAYS be pressed before using HRTF functions!
+    * You can use 'Tab' to select a subsequent text box.
+    * The default values for SOFA functions are as follow:
+        - Measurement Index: 0
+        - Emitter: 1
+        - Frequency Range (Hz): 20, 20000
+        - Magnitude (dB): -150, 0
+        - Azimuth (deg): 0
+        - Elevation (deg): 0
+    ''', justify='left')
+    commonHelpDescTutorialLabel.grid(row=4, column=0, rowspan=8)
+    
     feedbackTitleTutorialLabel = tk.Label(tutorialWindowContentFrame, text='Contact/Feedback', font=("TkDefaultFont", str(parse_font_dict['size'] + 2), "bold"))
-    feedbackTitleTutorialLabel.grid(row=3,column=1)
+    feedbackTitleTutorialLabel.grid(row=3,column=2)
     feedbackDescTutorialLabel = tk.Label(tutorialWindowContentFrame, text='https://hytheaway.github.io/contact.html', fg="blue", cursor='hand2')
-    feedbackDescTutorialLabel.grid(row=4, column=1)
+    feedbackDescTutorialLabel.grid(row=4, column=2)
     feedbackDescTutorialLabel.bind("<Button-1>", lambda e: callback_url("https://hytheaway.github.io/contact.html"))
     feedbackDesc2TutorialLabel = tk.Label(tutorialWindowContentFrame, text='https://github.com/hytheaway', fg="blue", cursor='hand2')
-    feedbackDesc2TutorialLabel.grid(row=5, column=1)
+    feedbackDesc2TutorialLabel.grid(row=5, column=2)
     feedbackDesc2TutorialLabel.bind("<Button-1>", lambda e: callback_url("https://github.com/hytheaway"))
     feedbackDesc3TutorialLabel = tk.Label(tutorialWindowContentFrame, text='hytheaway@gmail.com', fg="blue", cursor='hand2')
-    feedbackDesc3TutorialLabel.grid(row=6, column=1)
+    feedbackDesc3TutorialLabel.grid(row=6, column=2)
     feedbackDesc3TutorialLabel.bind("<Button-1>", lambda e: callback_url("mailto:hytheaway@gmail.com"))
 
     prevButton = tk.Button(tutorialWindowContentFrame, text='<- Previous (SOFA Help)', command=lambda:sofaHelpPage())
-    prevButton.grid(row=8, column=0, sticky='W')
+    prevButton.grid(row=20, column=0, sticky='W')
 
 # matplotlib.use('QtAgg')
 
@@ -1086,7 +1104,7 @@ freqDomainVisualHRTFButton.grid(row=5, column=0)
 
 sourceFrame = tk.Frame(hrtfSourceSelectionFrame, borderwidth=10, relief='flat')
 sourceFrame.grid(row=0, column=2)
-selectSourceFileButton = tk.Button(sourceFrame, text='Select source file', command=lambda:selectSourceFile())
+selectSourceFileButton = tk.Button(sourceFrame, text='Select source file (.wav)', command=lambda:selectSourceFile())
 selectSourceFileLabel = tk.Label(sourceFrame, text='Source file:\n', wraplength=120)
 selectSourceFileButton.grid(row=0, column=2)
 selectSourceFileLabel.grid(row=1, column=2)
@@ -1120,45 +1138,55 @@ selectSOFAFileLabel = tk.Label(bottomSectionFrame, text='SOFA file:\n', wrapleng
 selectSOFAFileButton.grid(row=0, column=0, columnspan=3)
 selectSOFAFileLabel.grid(row=1, column=0, columnspan=3)
 
+sofaMeasurementStringVar = tk.StringVar()
+sofaEmitterStringVar = tk.StringVar()
+freqXLimStringVar = tk.StringVar()
+magYLimStringVar = tk.StringVar()
+azimuthStringVar = tk.StringVar()
+elevationStringVar = tk.StringVar()
+
 bottomLeftFrame = tk.Frame(bottomSectionFrame, borderwidth=10, relief='flat')
 bottomLeftFrame.grid(row=2, column=0)
+bottomRightFrame = tk.Frame(bottomSectionFrame, borderwidth=10, relief='flat')
+bottomRightFrame.grid(row=2, column=2)
+
 getSOFAFileMetadataButton = tk.Button(bottomLeftFrame, text='Get SOFA File Metadata', state='disabled', command=lambda:getSOFAFileMetadata())
 getSOFAFileMetadataButton.grid(row=0, column=0)
-sofaMeasurementTextBox = tk.Text(bottomLeftFrame, state='disabled', height=1, width=5)
+getSOFAFileDimensionsButton = tk.Button(bottomRightFrame, text='Get SOFA File Dimensions', state='disabled', command=lambda:getSOFAFileDimensions())
+getSOFAFileDimensionsButton.grid(row=0, column=0)
+
+sofaMeasurementTextBox = tk.Entry(bottomLeftFrame, state='disabled', width=5, textvariable=sofaMeasurementStringVar)
 sofaMeasurementTextBox.grid(row=1, column=0)
 sofaMeasurementLabel = tk.Label(bottomLeftFrame, text='Measurement Index\n(default: 0)\n')
 sofaMeasurementLabel.grid(row=2, column=0)
-frequencyXLimTextBox = tk.Text(bottomLeftFrame, state='disabled', height=1, width=15)
-frequencyXLimTextBox.grid(row=3, column=0)
-frequencyXLimLabel = tk.Label(bottomLeftFrame, text='Frequency Range (Hz)\n[start, end]')
-frequencyXLimLabel.grid(row=4, column=0)
-azimuthTextBox = tk.Text(bottomLeftFrame, state='disabled', height=1, width=5)
-azimuthTextBox.grid(row=5, column=0)
-azimuthLabel = tk.Label(bottomLeftFrame, text='Desired azimuth (in deg)')
-azimuthLabel.grid(row=6, column=0)
-
-bottomRightFrame = tk.Frame(bottomSectionFrame, borderwidth=10, relief='flat')
-bottomRightFrame.grid(row=2, column=2)
-getSOFAFileDimensionsButton = tk.Button(bottomRightFrame, text='Get SOFA File Dimensions', state='disabled', command=lambda:getSOFAFileDimensions())
-getSOFAFileDimensionsButton.grid(row=0, column=0)
-sofaEmitterTextBox = tk.Text(bottomRightFrame, state='disabled', height=1, width=5)
+sofaEmitterTextBox = tk.Entry(bottomRightFrame, state='disabled', width=5, textvariable=sofaEmitterStringVar)
 sofaEmitterTextBox.grid(row=1, column=0)
 sofaEmitterLabel = tk.Label(bottomRightFrame, text='Emitter\n(default: 1)\n')
 sofaEmitterLabel.grid(row=2, column=0)
-magnitudeYLimTextBox = tk.Text(bottomRightFrame, state='disabled', height=1, width=15)
+
+frequencyXLimTextBox = tk.Entry(bottomLeftFrame, state='disabled', width=15, textvariable=freqXLimStringVar)
+frequencyXLimTextBox.grid(row=3, column=0)
+frequencyXLimLabel = tk.Label(bottomLeftFrame, text='Frequency Range (Hz)\n[start, end]')
+frequencyXLimLabel.grid(row=4, column=0)
+magnitudeYLimTextBox = tk.Entry(bottomRightFrame, state='disabled', width=15, textvariable=magYLimStringVar)
 magnitudeYLimTextBox.grid(row=3, column=0)
 magnitudeYLimLabel = tk.Label(bottomRightFrame, text='Magnitude (dB)\n[start, end]')
 magnitudeYLimLabel.grid(row=4, column=0)
-elevationTextBox = tk.Text(bottomRightFrame, state='disabled', height=1, width=5)
+
+azimuthTextBox = tk.Entry(bottomLeftFrame, state='disabled', width=5, textvariable=azimuthStringVar)
+azimuthTextBox.grid(row=5, column=0)
+azimuthLabel = tk.Label(bottomLeftFrame, text='Desired azimuth (in deg)')
+azimuthLabel.grid(row=6, column=0)
+elevationTextBox = tk.Entry(bottomRightFrame, state='disabled', width=5, textvariable=elevationStringVar)
 elevationTextBox.grid(row=5, column=0)
 elevationLabel = tk.Label(bottomRightFrame, text='Desired elevation (in deg)')
 elevationLabel.grid(row=6, column=0)
 
-sofaViewButton = tk.Button(bottomSectionFrame, text='View SOFA File', state='disabled', command=lambda:displaySOFAFile(frequencyXLimTextBox.get(1.0, 'end-1c'), magnitudeYLimTextBox.get(1.0, 'end-1c'), sofaMeasurementTextBox.get(1.0, 'end-1c'), sofaEmitterTextBox.get(1.0, 'end-1c')))
+sofaViewButton = tk.Button(bottomSectionFrame, text='View SOFA File', state='disabled', command=lambda:displaySOFAFile(freqXLimStringVar.get(), magYLimStringVar.get(), sofaMeasurementStringVar.get(), sofaEmitterStringVar.get()))
 sofaViewButton.grid(row=3, column=0, columnspan=2)
-sofaSaveButton = tk.Button(bottomSectionFrame, text='Save all SOFA graphs', state='disabled', command=lambda:saveSOFAFile(frequencyXLimTextBox.get(1.0, 'end-1c'), magnitudeYLimTextBox.get(1.0, 'end-1c'), sofaMeasurementTextBox.get(1.0, 'end-1c'), sofaEmitterTextBox.get(1.0, 'end-1c')))
+sofaSaveButton = tk.Button(bottomSectionFrame, text='Save all SOFA graphs', state='disabled', command=lambda:saveSOFAFile(freqXLimStringVar.get(), magYLimStringVar.get(), sofaMeasurementStringVar.get(), sofaEmitterStringVar.get()))
 sofaSaveButton.grid(row=3, column=1, columnspan=2)
-sofaDisplayButton = tk.Button(bottomSectionFrame, text='Render Source with SOFA file', state='disabled', command=lambda:manualSOFADisplay(azimuthTextBox.get(1.0, 'end-1c'), elevationTextBox.get(1.0, 'end-1c'), source_file))
+sofaDisplayButton = tk.Button(bottomSectionFrame, text='Render Source with SOFA file', state='disabled', command=lambda:manualSOFADisplay(azimuthStringVar.get(), elevationStringVar.get(), source_file))
 sofaDisplayButton.grid(row=4, column=0, columnspan=3)
 
 tutorialButton = tk.Button(rootFrame, text='Help', command=lambda:createHelpWindow())
