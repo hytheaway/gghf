@@ -25,29 +25,10 @@ from tkinter import filedialog
 from tkinter import font
 from scipy import signal # <- fast convolution function
 from scipy.io import wavfile # <- used for spectrogram
-# from PySide6 import QtCore, QtWidgets, QtGui
-# from PyQt6 import QtWidgets # <- for displaying matplotlib in standalone
-# import pyinstaller # <- only used for generating requirements.txt for my own .venv on multiple machines
-# try:
-#     import pyi_splash # <- only for pyinstaller.
-#     pyi_splash.close()
-# except:
-#     pass
-
-if "NUITKA_ONEFILE_PARENT" in os.environ:
-    
-    splash_filename = os.path.join(
-        tempfile.gettempdir(),
-        "onefile_%d_splash_feedback.tmp" % int(os.environ["NUITKA_ONEFILE_PARENT"]),
-    )
-    
-    if os.path.exists(splash_filename):
-        os.unlink(splash_filename)
 
 librosa.cache.clear()
 
 source_file = None
-
 class ToolTip(object): #https://stackoverflow.com/questions/20399243/display-message-when-hovering-over-something-with-mouse-cursor-in-python
     def __init__(self, widget):
         self.widget = widget
@@ -1044,8 +1025,6 @@ def generalHelpPage():
     
     prevButton = tk.Button(tutorialWindowContentFrame, text='<- Previous (SOFA Help)', command=lambda:sofaHelpPage())
     prevButton.grid(row=20, column=0, sticky='W')
-
-# matplotlib.use('QtAgg')
 
 root = tk.Tk()
 root.minsize(565, 910)
