@@ -40,7 +40,7 @@ if "NUITKA_ONEFILE_PARENT" in os.environ:
         tempfile.gettempdir(),
         "onefile_%d_splash_feedback.tmp" % int(os.environ["NUITKA_ONEFILE_PARENT"]),
     )
-
+    
     if os.path.exists(splash_filename):
         os.unlink(splash_filename)
 
@@ -54,7 +54,7 @@ class ToolTip(object): #https://stackoverflow.com/questions/20399243/display-mes
         self.tipwindow = None
         self.id = None
         self.x = self.y = 0
-
+    
     def show_tooltip(self, text):
         self.text = text
         if self.tipwindow  or not self.text:
@@ -67,7 +67,7 @@ class ToolTip(object): #https://stackoverflow.com/questions/20399243/display-mes
         tw.wm_geometry("+%d+%d" % (x, y))
         tooltip_label = tk.Label(tw, text=self.text, justify='left', background='#ffffe0', relief='solid', borderwidth=0, font="TkDefaultFont 8 normal")
         tooltip_label.pack(ipadx=1)
-
+    
     def hide_tooltip(self):
         tw = self.tipwindow
         self.tipwindow = None
@@ -266,15 +266,18 @@ def stereoToMono():
 def fs_resample(s1, f1, s2, f2):
     """
     For two signals that have differing sample rates, resample the lower to meet the higher.
-
+    
     Args:
         s1 (ndarray): First signal.
         f1 (int): Sampling rate of s1.
         s2 (ndarray): Second signal.
         f2 (int): Sampling rate of s2.
-
+    
     Returns:
-        int, int, int, int: Resampled signal 1, signal 1's resampled sampling rate, resampled signal 2, signal 2's resampled sampling rate.
+        s1 (ndarray): Resampled signal 1
+        f1 (int): signal 1's resampled sampling rate
+        s2 (ndarray): resampled signal 2
+        f2 (int): signal 2's resampled sampling rate
     """    
     if f1 != f2:
         if f2 < f1:
@@ -307,7 +310,7 @@ def timeDomainConvolve():
     global Bin_Mix
     s_L = np.convolve(sig_mono,HRIR[:,0])
     s_R = np.convolve(sig_mono,HRIR[:,1])
-
+    
     Bin_Mix = np.vstack([s_L,s_R]).transpose()
     newWindow = tk.Toplevel(root)
     newWindow.iconphoto(False, icon_photo)
@@ -345,9 +348,7 @@ def exportConvolved():
         windowTitleExportSuccessLabel.pack()
         create_tooltip(windowTitleExportSuccessLabel, str(export_filename))
     else:
-        newWindow.title('Export Failed')
-        windowTitleExportFailLabel = tk.Label(newWindow, text="File export failed.")
-        windowTitleExportFailLabel.pack()
+        errorWindow(error_message='Export Failed')
 
 
 def selectSOFAFile():
@@ -393,7 +394,7 @@ def getSOFAFileMetadata():
     windowSOFAMetadataLabel = tk.Text(newWindow, width=100, height=100, wrap='word', yscrollcommand=v.set)
     windowSOFAMetadataLabel.insert('end', str(myString))
     windowSOFAMetadataLabel.pack()
-
+    
     v.config(command=windowSOFAMetadataLabel.yview)
 
 def getSOFAFileDimensions():
@@ -421,7 +422,7 @@ def find_nearest(array, value):
 def exportSOFAConvolved(source_file_name, angle_label, elev_label, audioContent, sofa_positions, samplerate=48000):
     sofa_file_location = os.path.join(*sofa_file_print[:-1])
     export_directory = filedialog.askdirectory(title='Select Save Directory', initialdir=sofa_file_location)
-
+    
     newWindow = tk.Toplevel(root)
     newWindow.iconphoto(False, icon_photo)
     newWindow.minsize(500, 150)
@@ -436,7 +437,7 @@ def exportSOFAConvolved(source_file_name, angle_label, elev_label, audioContent,
     except:
         windowSourceNoDistanceLabel = tk.Label(newWindow, text='No distance information available\n')
         windowSourceNoDistanceLabel.pack()
-
+    
     if export_directory:
         export_filename = os.path.join(str(export_directory), str((sofa_file_print[len(sofa_file_print)-1])[:-5]))
         sf.write(export_filename + '-' + str(source_file_name[:-4]) + '-azi_' + str(angle_label) + '-elev_' + str(elev_label) + '-export.wav', audioContent, samplerate=samplerate)
@@ -446,6 +447,27 @@ def exportSOFAConvolved(source_file_name, angle_label, elev_label, audioContent,
     if not export_directory:
         windowSOFAInfoLabel = tk.Label(newWindow, text='Not rendered: Export directory not given.')
         windowSOFAInfoLabel.pack()
+
+def sanitizeBounds(bounds):
+    """
+    Sanitizes and splits bounds from the user-input frequency and magnitude ranges to account for whitespace, brackets, and commas.
+    
+    Args:
+        bounds (str): Lower and upper bound to be sanitized and split.
+    
+    Returns:
+        str: lower_limit, upper_limit
+    """    
+    bounds = str(bounds)
+    for char in bounds:
+        if char == '[' or char == ']' or char == ' ':
+            bounds = bounds.replace(char, '')
+    for i in range(0, len(bounds)):
+        if bounds[i] == ',':
+            lower_limit = bounds[0:i]
+            upper_limit = bounds[i+1:]
+    
+    return lower_limit, upper_limit
 
 def plot_coordinates(in_sofa_file, fig):
     """
@@ -517,28 +539,53 @@ def computeHRTF(in_sofa_file, measurement=0, emitter=1):
     
     return f_axis, HRTF_mag_dB
 
-def sanitizeBounds(bounds):
+def plotHRIR(in_sofa_file, legend, measurement, emitter):
     """
-    Sanitizes and splits bounds from the user-input frequency and magnitude ranges to account for whitespace, brackets, and commas.
+    Plots a head-related impulse response graph for a given .sofa file with a given legend, measurement index, and emitter.
 
     Args:
-        bounds (str): Lower and upper bound to be sanitized and split.
-
-    Returns:
-        str: lower_limit, upper_limit
+        in_sofa_file (str): Path to sofa file.
+        legend (list): Legend to populate with receiver dimensions (e.g., Left and Right).
+        measurement (int): Measurement index to plot.
+        emitter (int): Emitter to plot.
     """    
-    bounds = str(bounds)
-    for char in bounds:
-        if char == '[' or char == ']' or char == ' ':
-            bounds = bounds.replace(char, '')
-    for i in range(0, len(bounds)):
-        if bounds[i] == ',':
-            lower_limit = bounds[0:i]
-            upper_limit = bounds[i+1:]
+    hrir_window_title = 'Head-Related Impulse Response for: ' + os.path.basename(in_sofa_file)
+    plt.figure(figsize=(15, 5), num=str(hrir_window_title))
+    t, receiver_dimensions, ir = computeHRIR(in_sofa_file, measurement)
+    for receiver in np.arange(receiver_dimensions):
+        plt.plot(t, ir.get_values(indices={"M":measurement, "R":receiver, "E":emitter}))
+        legend.append('Receiver {0}'.format(receiver))
+    plt.title('{0}: HRIR at M={1} for emitter {2}'.format(os.path.basename(in_sofa_file), measurement, emitter))
+    plt.legend(legend)
+    plt.xlabel('$t$ in s')
+    plt.ylabel(r'$h(t)$')
+    plt.grid()
     
-    return lower_limit, upper_limit
+    return
 
-def viewSOFAGraphs(xlim, ylim, measurement, emitter):
+def plotHRTF(in_sofa_file, legend, measurement, emitter, xlim, ylim):
+    legend = ['Left', 'Right']
+    
+    xlim_start, xlim_end = sanitizeBounds(xlim)
+    ylim_start, ylim_end = sanitizeBounds(ylim)
+    
+    hrtf_window_title = 'Head-Related Transfer Function for: ' + os.path.basename(in_sofa_file)
+    plt.figure(figsize=(15, 5), num=str(hrtf_window_title))
+    f_axis, HRTF_mag_dB = computeHRTF(in_sofa_file, measurement, emitter)
+    plt.semilogx(f_axis, HRTF_mag_dB)
+    ax = plt.gca()
+    ax.set_xlim([int(xlim_start), int(xlim_end)])
+    ax.set_ylim([int(ylim_start), int(ylim_end)])
+    plt.grid()
+    plt.grid(which='minor', color="0.9")
+    plt.title('{0}: HRTF at M={1} for emitter {2}'.format(os.path.basename(in_sofa_file), measurement, emitter))
+    plt.xlabel('Frequency (Hz)')
+    plt.ylabel('Magnitude (dB)')
+    plt.legend(legend)
+    
+    return
+
+def viewSOFAGraphs(in_sofa_file, xlim, ylim, measurement, emitter):
     if not xlim:
         xlim = '20, 20000'
     if not ylim:
@@ -549,50 +596,28 @@ def viewSOFAGraphs(xlim, ylim, measurement, emitter):
         emitter = 1
     
     legend = []
-    xlim_start, xlim_end = sanitizeBounds(xlim)
-    ylim_start, ylim_end = sanitizeBounds(ylim)
     
     # plot source coordinates
-    sofa_positions_window_title = 'SOFA Source Positions for ' + os.path.basename(sofa_file)
+    sofa_positions_window_title = 'SOFA Source Positions for ' + os.path.basename(in_sofa_file)
     sofa_pos_fig = plt.figure(figsize=(10, 7), num=str(sofa_positions_window_title))
-    plot_coordinates(sofa_file, sofa_pos_fig)
-
-    hrir_window_title = 'Head-Related Impulse Response for: ' + os.path.basename(sofa_file)
-    plt.figure(figsize=(15, 5), num=str(hrir_window_title))
-    t, receiver_dimensions, ir = computeHRIR(sofa_file, measurement)
-    for receiver in np.arange(receiver_dimensions):
-        plt.plot(t, ir.get_values(indices={"M":measurement, "R":receiver, "E":emitter}))
-        legend.append('Receiver {0}'.format(receiver))
-    plt.title('{0}: HRIR at M={1} for emitter {2}'.format(os.path.basename(sofa_file), measurement, emitter))
-    plt.legend(legend)
-    plt.xlabel('$t$ in s')
-    plt.ylabel(r'$h(t)$')
-    plt.grid()
-
-    hrtf_window_title = 'Head-Related Transfer Function for: ' + os.path.basename(sofa_file)
-    plt.figure(figsize=(15, 5), num=str(hrtf_window_title))
-    f_axis, HRTF_mag_dB = computeHRTF(sofa_file, measurement, emitter)
-    plt.semilogx(f_axis, HRTF_mag_dB)
-    ax = plt.gca()
-    ax.set_xlim([int(xlim_start), int(xlim_end)])
-    ax.set_ylim([int(ylim_start), int(ylim_end)])
-    plt.grid()
-    plt.grid(which='minor', color="0.9")
-    plt.title('{0}: HRTF at M={1} for emitter {2}'.format(os.path.basename(sofa_file), measurement, emitter))
-    plt.xlabel('Frequency (Hz)')
-    plt.ylabel('Magnitude (dB)')
-    plt.legend(['Left','Right'])
-    plt.show()
-
-    plt.close()
+    plot_coordinates(in_sofa_file, sofa_pos_fig)
     
-def saveSOFAGraphs(xlim, ylim, measurement=0, emitter=1):
+    plotHRIR(in_sofa_file, legend, measurement, emitter)
+    
+    plotHRTF(in_sofa_file, legend, measurement, emitter, xlim, ylim)
+    
+    plt.show()
+    
     plt.close()
-    export_directory = filedialog.askdirectory(title='Select Save Directory', initialdir=os.path.dirname(sofa_file))
+    return
+
+def saveSOFAGraphs(in_sofa_file, xlim, ylim, measurement=0, emitter=1):
+    plt.close()
+    export_directory = filedialog.askdirectory(title='Select Save Directory', initialdir=os.path.dirname(in_sofa_file))
     if not export_directory:
         errorWindow(error_message='Directory not given.')
         return -1
-    export_directory = os.path.join(export_directory, os.path.basename(sofa_file))
+    export_directory = os.path.join(export_directory, os.path.basename(in_sofa_file))
     export_directory = export_directory + '-measurements'
     try:
         os.mkdir(export_directory)
@@ -609,59 +634,33 @@ def saveSOFAGraphs(xlim, ylim, measurement=0, emitter=1):
         emitter = 1
     legend = []
 
-    # plot source coordinates
-    sofa_positions_window_title = 'SOFA Source Positions for ' + os.path.basename(sofa_file)
+    # plot & save source coordinates
+    sofa_positions_window_title = 'SOFA Source Positions for ' + os.path.basename(in_sofa_file)
     sofa_pos_fig = plt.figure(figsize=(10, 7), num=str(sofa_positions_window_title))
-    plot_coordinates(sofa_file, sofa_pos_fig)
-    
-    unedited_sofa_filename = os.path.basename(sofa_file)
+    plot_coordinates(in_sofa_file, sofa_pos_fig)
+    unedited_sofa_filename = os.path.basename(in_sofa_file)
     for letter in unedited_sofa_filename:
         if letter == '':
             letter = '_'
     sofa_pos_indiv_filename = 'SOFA_Source_Positions_for_' + unedited_sofa_filename + '.png'
     sofa_pos_export_filename = os.path.join(str(export_directory), sofa_pos_indiv_filename)
     plt.savefig(sofa_pos_export_filename)
-
-    xlim_start, xlim_end = sanitizeBounds(xlim)
-    ylim_start, ylim_end = sanitizeBounds(ylim)
     
-    hrir_plot_title = 'Head-Related Impulse Response for: ' + os.path.basename(sofa_file)
-    plt.figure(figsize=(15, 5), num=str(hrir_plot_title))
-    t, receiver_dimensions, ir = computeHRIR(sofa_file, measurement)
-    for receiver in np.arange(receiver_dimensions):
-        plt.plot(t, ir.get_values(indices={"M":measurement, "R":receiver, "E":emitter}))
-        legend.append('Receiver {0}'.format(receiver))
-    plt.title('{0}: HRIR at M={1} for emitter {2}'.format(os.path.basename(sofa_file), measurement, emitter))
-    plt.legend(legend)
-    plt.xlabel('$t$ in s')
-    plt.ylabel(r'$h(t)$')
-    plt.grid()
-    
+    # plot & save HRIR
+    plotHRIR(in_sofa_file, legend, measurement, emitter)
     sofa_hrir_indiv_filename = 'Head-Related_Impulse_Response_for_' + unedited_sofa_filename + '.png'
     sofa_hrir_export_filename = os.path.join(str(export_directory), sofa_hrir_indiv_filename)
     plt.savefig(sofa_hrir_export_filename)
     
-    hrtf_window_title = 'Head-Related Transfer Function for: ' + os.path.basename(sofa_file)
-    plt.figure(figsize=(15, 5), num=str(hrtf_window_title))
-    f_axis, HRTF_mag_dB = computeHRTF(sofa_file, measurement, emitter)
-    plt.semilogx(f_axis, HRTF_mag_dB)
-    ax = plt.gca()
-    ax.set_xlim([int(xlim_start), int(xlim_end)])
-    ax.set_ylim([int(ylim_start), int(ylim_end)])
-    plt.grid()
-    plt.grid(which='minor', color="0.9")
-    plt.title('{0}: HRTF at M={1} for emitter {2}'.format(os.path.basename(sofa_file), measurement, emitter))
-    plt.xlabel('Frequency (Hz)')
-    plt.ylabel('Magnitude (dB)')
-    plt.legend(['Left','Right'])
-
+    # plot & save HRTF
+    plotHRTF(in_sofa_file, legend, measurement, emitter, xlim, ylim)
     sofa_hrtf_indiv_filename = 'Head-Related_Transfer_Function_for_' + unedited_sofa_filename + '.png'
     sofa_hrtf_export_filename = os.path.join(str(export_directory), sofa_hrtf_indiv_filename)
     plt.savefig(sofa_hrtf_export_filename)
-
+    
     plt.close()
     
-    messageWindow('Successfully exported to:\n' + (os.path.basename(sofa_file) + '-measurements'), title='Export Successful', width=400, tooltip_text=export_directory)
+    messageWindow('Successfully exported to:\n' + (os.path.basename(in_sofa_file) + '-measurements'), title='Export Successful', width=400, tooltip_text=export_directory)
 
 
 def renderWithSOFA(angle, elev, source_file, target_fs=48000):
@@ -689,17 +688,17 @@ def renderWithSOFA(angle, elev, source_file, target_fs=48000):
         
         if not elev:
             elev = 0
-
+        
         # init
         SOFA_HRTF = sofa.Database.open(sofa_file)
         sofa_fs_H = SOFA_HRTF.Data.SamplingRate.get_values()[0]
         sofa_positions = SOFA_HRTF.Source.Position.get_values(system='spherical')
         SOFA_H = np.zeros([SOFA_HRTF.Dimensions.N,2])
         Stereo3D = np.zeros([SOFA_HRTF.Dimensions.N,2])
-
+        
         angle = int(angle)
         elev = int(elev)
-
+        
         # database specific format adjustments
         global angle_label
         global elev_label
@@ -708,7 +707,7 @@ def renderWithSOFA(angle, elev, source_file, target_fs=48000):
         angle = 360 - angle
         if angle == 360:
             angle = 0
-
+            
         # retrieve hrtf data for angle
         [az, az_idx] = find_nearest(sofa_positions[:,0], angle)
         subpositions = sofa_positions[np.where(sofa_positions[:,0]==az)]
@@ -729,7 +728,7 @@ def renderWithSOFA(angle, elev, source_file, target_fs=48000):
         if fs_x != target_fs:
             # print("** Recalc SR **\nAudio file SR =", fs_x, "\nTarget SR =", target_fs)
             source_x = librosa.core.resample(source_x.transpose(), orig_sr=int(fs_x), target_sr=int(target_fs), fix=True).transpose()
-
+            
         rend_L = signal.fftconvolve(source_x,SOFA_H[:,0])
         rend_R = signal.fftconvolve(source_x,SOFA_H[:,1])
         M = np.max([np.abs(rend_L), np.abs(rend_R)])
@@ -738,9 +737,9 @@ def renderWithSOFA(angle, elev, source_file, target_fs=48000):
             Stereo3D = np.append(Stereo3D, np.zeros([diff,2]),0)
         Stereo3D[0:len(rend_L),0] += (rend_L/M)
         Stereo3D[0:len(rend_R),1] += (rend_R/M)
-
+        
         exportSOFAConvolved(str(source_file_print[len(source_file_print)-1]), angle_label, elev_label, Stereo3D, sofa_positions, int(target_fs))
-
+        
         return Stereo3D
 
 def spectrogram(audio_file, start_msSV, end_msSV, dynamic_range_minSV, dynamic_range_maxSV, plot_titleSV):
@@ -749,24 +748,24 @@ def spectrogram(audio_file, start_msSV, end_msSV, dynamic_range_minSV, dynamic_r
     plot_title = plot_titleSV.get()
     dynamic_range_min = dynamic_range_minSV.get()
     dynamic_range_max = dynamic_range_maxSV.get()
-
+    
     if not plot_title:
         plot_title = os.path.basename(audio_file)
     
     sr, samples = wavfile.read(str(audio_file))
-
+    
     if len(samples.shape) > 1:
         samples = samples.transpose()[0]
-
+        
     if not start_ms:
         start_ms = '0'
-
+        
     if not end_ms:
         end_ms = str((len(samples) / sr) * 1000)
     
     start_in_samples = (float(start_ms)/1000) * sr
     end_in_samples = (float(end_ms)/1000) * sr
-
+    
     if start_in_samples >= end_in_samples:
         errorWindow(error_message='End time cannot be equal to or less than start time.', width=400)
         return
@@ -774,9 +773,9 @@ def spectrogram(audio_file, start_msSV, end_msSV, dynamic_range_minSV, dynamic_r
     start_in_samples = int(start_in_samples)
     end_in_samples = int(end_in_samples)
     rebound_samples = samples[start_in_samples:end_in_samples]
-
+    
     f, t, spectrogram = signal.spectrogram(rebound_samples, sr)
-
+    
     fig, ax = plt.subplots()
     if dynamic_range_min and dynamic_range_max:
         p = ax.pcolormesh(t, f, 10*np.log10(spectrogram), vmin=int(dynamic_range_min), vmax=int(dynamic_range_max), shading='auto')
@@ -786,14 +785,14 @@ def spectrogram(audio_file, start_msSV, end_msSV, dynamic_range_minSV, dynamic_r
         p = ax.pcolormesh(t, f, 10*np.log10(spectrogram), vmin=int(dynamic_range_min), shading='auto')
     else:
         p = ax.pcolormesh(t, f, 10*np.log10(spectrogram), shading='auto')
-
+        
     ax.set_ylim(1, int(sr/2))
     ax.set_ylabel('Frequency (Hz)')
     ax.set_xlabel('Time (s)')
-
+    
     fig.colorbar(p, label='Intensity (dB)')
     fig.canvas.manager.set_window_title(str('Spectrogram for ' + os.path.basename(audio_file)))
-
+    
     plt.title(str(plot_title))
     plt.show()
 
@@ -875,10 +874,12 @@ def errorWindow(error_message='Generic Error Message', title='Error', width=300,
     errorWindow.title(str(title))
     errorWindow.geometry(str(width)+'x'+str(height))
     errorWindow.minsize(width, height)
-    errorMessageLabel = tk.Label(errorWindow, text='\n\nError: ' + str(error_message))
+    errorMessageLabel = tk.Label(errorWindow, text='\nError: ' + str(error_message) + '\n') 
     if tooltip_text:
         create_tooltip(errorMessageLabel, text=str(tooltip_text))
     errorMessageLabel.pack()
+    errorConfirmButton = tk.Button(errorWindow, text='OK', command=lambda:errorWindow.destroy())
+    errorConfirmButton.pack()
     errorWindow.focus_force()
     return -1
 
@@ -905,10 +906,12 @@ def messageWindow(message='Generic Message', title='Title', width=300, height=10
     messageWindow.title(str(title))
     messageWindow.geometry(str(width)+'x'+str(height))
     messageWindow.minsize(width, height)
-    messageLabel = tk.Label(messageWindow, text='\n\n' + str(message))
+    messageLabel = tk.Label(messageWindow, text='\n' + str(message) + '\n')
     if tooltip_text:
         create_tooltip(messageLabel, text=str(tooltip_text))
     messageLabel.pack()
+    messageConfirmButton = tk.Button(messageWindow, text='OK', command=lambda:messageWindow.destroy())
+    messageConfirmButton.pack()
     messageWindow.focus_force()
     return -1
 
@@ -934,10 +937,10 @@ def createHelpWindow():
 
 def hrtfHelpPage():
     clearWidgets(tutorialWindowContentFrame)
-
+    
     hrtfTitleTutorialLabel = tk.Label(tutorialWindowContentFrame, text='HRTF Functions\n', font=("TkDefaultFont", str(parse_font_dict['size'] + 4), "bold"))
     hrtfTitleTutorialLabel.grid(row=0, column=1)
-
+    
     selectHRTFTutorialLabel = tk.Label(tutorialWindowContentFrame, text='"Select HRTF File (.wav)"\nPresents dialogue box for selecting HRTF.\nOnly takes .wav files. Expects an IR.\n')
     selectHRTFTutorialLabel.grid(row=1, column=0)
     getHRTFFileDataTutorialLabel = tk.Label(tutorialWindowContentFrame, text='"Get HRTF File Data"\nPresents info about HRTF file, including:\n- Sample rate\n- Data dimension (num samples, num channels)\n- Ability to play loaded HRTF file.\n')
@@ -946,7 +949,7 @@ def hrtfHelpPage():
     hrtfTimeDomainVisualizationTutorialLabel.grid(row=3, column=0)
     hrtfFrequencyDomainVisualizationTutorialLabel = tk.Label(tutorialWindowContentFrame, text='"HRTF Frequency Domain Visualization"\nFrequency domain plot of loaded HRTF.\n')
     hrtfFrequencyDomainVisualizationTutorialLabel.grid(row=4, column=0)
-
+    
     selectSourceFileTutorialLabel = tk.Label(tutorialWindowContentFrame, text='"Select Source File (.wav)"\nPresents dialogue box for selecting a source file.\nOnly takes .wav files.\nUsed for convolving with loaded HRTF.\nAlso used for convolving with loaded SOFA file.\n')
     selectSourceFileTutorialLabel.grid(row=1, column=2)
     getSourceFileDataTutorialLabel = tk.Label(tutorialWindowContentFrame, text='"Get Source File Data"\nPresents info about source file, including:\n- Sample rate\n- Data dimension (num samples, num channels)\n- Ability to play loaded selected file.\n')
@@ -955,14 +958,14 @@ def hrtfHelpPage():
     spectrogramTutorialLabel.grid(row=3, column=2)
     stereoToMonoTutorialLabel = tk.Label(tutorialWindowContentFrame, text='"Source File Stereo -> Mono"\nDownmixes stereo file into mono\nfor convenience with convolving.\n')
     stereoToMonoTutorialLabel.grid(row=4, column=2)
-
+    
     resampleTutorialLabel = tk.Label(tutorialWindowContentFrame, text='"Resample"\nResamples source file to match sample rate of loaded HRTF file.\nResampled source file is held in memory, not exported.\nSource File Stereo -> Mono MUST be pressed first!\n')
     resampleTutorialLabel.grid(row=5, column=1)
     timeDomainConvolveTutorialLabel = tk.Label(tutorialWindowContentFrame, text='"Time Domain Convolve"\nTime domain convolves loaded source file with loaded HRTF file.\nSource file should either match HRTF file sample rate,\nor have been resampled with the button above.\nConvolved file is held in memory, not exported.\n')
     timeDomainConvolveTutorialLabel.grid(row=6, column=1)
     exportConvolvedTutorialLabel = tk.Label(tutorialWindowContentFrame, text='"Export Convolved"\nExports the time domain convolved file loaded in memory.\nFile naming convention is:\n[Source File Name]-[HRTF File Name]-export.wav\n')
     exportConvolvedTutorialLabel.grid(row=7, column=1)
-
+    
     nextButton = tk.Button(tutorialWindowContentFrame, text='Next (SOFA Help) ->', command=lambda:sofaHelpPage())
     nextButton.grid(row=8, column=2, sticky='E')
 
@@ -970,7 +973,7 @@ def sofaHelpPage():
     clearWidgets(tutorialWindowContentFrame)
     sofaTitleTutorialLabel = tk.Label(tutorialWindowContentFrame, text='SOFA Functions\n', font=("TkDefaultFont", str(parse_font_dict['size'] + 4), "bold"))
     sofaTitleTutorialLabel.grid(row=0, column=1)
-
+    
     selectSOFAFileTutorialLabel = tk.Label(tutorialWindowContentFrame, text='"Select SOFA File"\nPresents dialogue box for selecting .SOFA file.\n')
     selectSOFAFileTutorialLabel.grid(row=1, column=1)
     getSOFAFileMetadataTutorialLabel = tk.Label(tutorialWindowContentFrame, text='"Get SOFA File Metadata"\nPresents metadata embedded in the loaded SOFA file.\nFollows SOFA convention.\n')
@@ -981,7 +984,7 @@ def sofaHelpPage():
     frequencyXLimTutorialLabel.grid(row=4, column=0)
     desiredAzimuthTutorialLabel = tk.Label(tutorialWindowContentFrame, text='"Desired azimuth (in deg)"\nEnter azimuth for rendering with source file. Defaults to 0deg.\nSelectable azimuth for viewing .SOFA file plot, and for rendering.\n')
     desiredAzimuthTutorialLabel.grid(row=5, column=0)
-
+    
     getSOFAFileDimensionsTutorialLabel = tk.Label(tutorialWindowContentFrame, text='"Get SOFA File Dimensions"\nPresents info about the SOFA convention dimensions\nwithin the .SOFA file.\n')
     getSOFAFileDimensionsTutorialLabel.grid(row=2, column=2)
     sofaEmitterTutorialLabel = tk.Label(tutorialWindowContentFrame, text='"Emitter"\nChoose the emitter to be used when viewing plot data.\nCheck .SOFA file dimensions for emitters.\n')
@@ -990,17 +993,17 @@ def sofaHelpPage():
     magnitudeYLimTutorialLabel.grid(row=4, column=2)
     desiredElevationTutorialLabel = tk.Label(tutorialWindowContentFrame, text='"Desired elevation (in deg)"\nEnter elevation for rendering with source file. Defaults to 0deg.\nSelectable elevation for viewing .SOFA file plot, and for rendering.\n')
     desiredElevationTutorialLabel.grid(row=5, column=2)
-
+    
     viewSOFAFileTutorialLabel = tk.Label(tutorialWindowContentFrame, text='"View SOFA File"\nTakes the above selected values\nand presents a 3D view of the .SOFA file,\n in addition to individual measurements\nfrom the .SOFA file.\n')
     viewSOFAFileTutorialLabel.grid(row=6, column=0)
     saveSOFAFileTutorialLabel = tk.Label(tutorialWindowContentFrame, text='"Save all SOFA graphs"\nSaves graphs/plots for source positions,\nhead-related impulse response, and head-related transfer function\nfor the provided azimuth, elevation, emitter, and measurement index to\nthe provided directory.\n')
     saveSOFAFileTutorialLabel.grid(row=6, column=2)
     renderSOFATutorialLabel = tk.Label(tutorialWindowContentFrame, text='"Render Source with SOFA File"\nConvolves the source file with\nthe desired values in the .SOFA file.\n')
     renderSOFATutorialLabel.grid(row=7, column=1)
-
+    
     prevButton = tk.Button(tutorialWindowContentFrame, text='<- Previous (HRTF Help)', command=lambda:hrtfHelpPage())
     prevButton.grid(row=8, column=0, sticky='W')
-
+    
     nextButton = tk.Button(tutorialWindowContentFrame, text='Next (General Help) ->', command=lambda:generalHelpPage())
     nextButton.grid(row=8, column=2, sticky='E')
 
@@ -1072,7 +1075,7 @@ def generalHelpPage():
     feedbackDesc3TutorialLabel = tk.Label(tutorialWindowContentFrame, text='hytheaway@gmail.com', fg="blue", cursor='hand2')
     feedbackDesc3TutorialLabel.grid(row=6, column=2)
     feedbackDesc3TutorialLabel.bind("<Button-1>", lambda e: callback_url("mailto:hytheaway@gmail.com"))
-
+    
     prevButton = tk.Button(tutorialWindowContentFrame, text='<- Previous (SOFA Help)', command=lambda:sofaHelpPage())
     prevButton.grid(row=20, column=0, sticky='W')
 
@@ -1198,9 +1201,9 @@ elevationTextBox.grid(row=5, column=0)
 elevationLabel = tk.Label(bottomRightFrame, text='Desired elevation (in deg)')
 elevationLabel.grid(row=6, column=0)
 
-sofaViewButton = tk.Button(bottomSectionFrame, text='View SOFA File', state='disabled', command=lambda:viewSOFAGraphs(freqXLimStringVar.get(), magYLimStringVar.get(), sofaMeasurementStringVar.get(), sofaEmitterStringVar.get()))
+sofaViewButton = tk.Button(bottomSectionFrame, text='View SOFA File', state='disabled', command=lambda:viewSOFAGraphs(sofa_file, freqXLimStringVar.get(), magYLimStringVar.get(), sofaMeasurementStringVar.get(), sofaEmitterStringVar.get()))
 sofaViewButton.grid(row=3, column=0, columnspan=2)
-sofaSaveButton = tk.Button(bottomSectionFrame, text='Save all SOFA graphs', state='disabled', command=lambda:saveSOFAGraphs(freqXLimStringVar.get(), magYLimStringVar.get(), sofaMeasurementStringVar.get(), sofaEmitterStringVar.get()))
+sofaSaveButton = tk.Button(bottomSectionFrame, text='Save all SOFA graphs', state='disabled', command=lambda:saveSOFAGraphs(sofa_file, freqXLimStringVar.get(), magYLimStringVar.get(), sofaMeasurementStringVar.get(), sofaEmitterStringVar.get()))
 sofaSaveButton.grid(row=3, column=1, columnspan=2)
 sofaRenderButton = tk.Button(bottomSectionFrame, text='Render Source with SOFA file', state='disabled', command=lambda:renderWithSOFA(azimuthStringVar.get(), elevationStringVar.get(), source_file))
 sofaRenderButton.grid(row=4, column=0, columnspan=3)
@@ -1208,13 +1211,12 @@ sofaRenderButton.grid(row=4, column=0, columnspan=3)
 tutorialButton = tk.Button(rootFrame, text='Help', command=lambda:createHelpWindow())
 tutorialButton.grid(row=5, column=0, sticky='W')
 
-quitButton = tk.Button(rootFrame, text='Quit', command=lambda:root.destroy())
+quitButton = tk.Button(rootFrame, text='Quit', command=lambda:quit())
 quitButton.grid(row=5, column=2, sticky='E')
 
 # prevents the window from appearing at the bottom of the stack
-root.attributes('-topmost', True)
-root.update()
-root.attributes('-topmost', False)
 root.focus_force()
+
+root.protocol('WM_DELETE_WINDOW', lambda:quit())
 
 root.mainloop()
