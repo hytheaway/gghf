@@ -5,26 +5,23 @@
 # also please keep in mind that this isn't supposed to be "efficient" or "clean" or "lightweight".
 # this is meant to be the most brute force way to do all my hrtf processing in one file with one interface. 
 
-import os
-import tempfile
-import sys
+import os # <- reading files from disk, adapting to differing os directory path conventions
+import tempfile # <- adapting to differing os temp file locations
 
-os.environ['NUMBA_CACHE_DIR'] = str(tempfile.gettempdir())
-os.environ['LIBROSA_CACHE_DIR'] = str(tempfile.gettempdir())
-print(sys.path)
+os.environ['LIBROSA_CACHE_DIR'] = str(tempfile.gettempdir()) # <- must be called before importing librosa
 
-import numpy as np
-import matplotlib.pyplot as plt
-import soundfile as sf # <- read audio
+import numpy as np # <- matrix calc
+import matplotlib.pyplot as plt # <- data visualization 
+import soundfile as sf # <- read audio into ndarray
 import sofa # <- read SOFA HRTFs
 import librosa # <- resample function
-import pygame # <- for playing audio files directly.
-import webbrowser
-import tkinter as tk
-from tkinter import filedialog
-from tkinter import font
 from scipy import signal # <- fast convolution function
 from scipy.io import wavfile # <- used for spectrogram
+import pygame # <- for playing audio files directly.
+import tkinter as tk # <- reliable, if clunky, gui
+from tkinter import filedialog # <- gui file selection from disk
+from tkinter import font # <- ensures fonts are system-compatible
+import webbrowser # <- help page links
 
 librosa.cache.clear()
 
