@@ -138,7 +138,7 @@ def selectHRTFFile():
     else:
         if hrtf_file:
             hrtf_file_print = hrtf_file.split('/')
-            selectHRTFFileLabel.config(text='HRTF file:\n' + shorten_file_name(hrtf_file_print[len(hrtf_file_print)-1], 15))
+            selectHRTFFileLabel.config(text='HRTF file:\n' + shorten_file_name(os.path.basename(hrtf_file), 15))
             create_tooltip(selectHRTFFileLabel, text=str(hrtf_file))
             getHRTFFileDataButton.config(state='active')
             timeDomainVisualHRTFButton.config(state='active')
@@ -165,7 +165,7 @@ def selectSourceFile():
         if source_file == '':
             return
         source_file_print = source_file.split('/')
-        selectSourceFileLabel.config(text='Source file:\n' + shorten_file_name(source_file_print[len(source_file_print)-1], 15))
+        selectSourceFileLabel.config(text='Source file:\n' + shorten_file_name(os.path.basename(source_file), 15))
         create_tooltip(selectSourceFileLabel, text=str(source_file))
         getSourceFileDataButton.config(state='active')
         stereoToMonoButton.config(state='active')
@@ -173,94 +173,84 @@ def selectSourceFile():
         resampleButton.config(state='disabled')
         [sig,fs_s] = sf.read(source_file)
 
-def getHRTFFileData():
-    newWindow = tk.Toplevel(root)
-    newWindow.iconphoto(False, icon_photo)
-    centered_window(newWindow)
-    newWindow.minsize(300, 120)
-    newWindow.title('HRTF File Data')
-    windowTitleHRTFData = tk.Label(newWindow, text='\n' + hrtf_file_print[len(hrtf_file_print)-1] + '\n')
+def getHRTFFileData(in_hrtf_file):
+    hrtfFileDataWindow = tk.Toplevel(root)
+    hrtfFileDataWindow.iconphoto(False, icon_photo)
+    centered_window(hrtfFileDataWindow)
+    hrtfFileDataWindow.minsize(300, 120)
+    hrtfFileDataWindow.title('HRTF File Data')
+    windowTitleHRTFData = tk.Label(hrtfFileDataWindow, text='\n' + os.path.basename(in_hrtf_file) + '\n')
     windowTitleHRTFData.pack()
-    create_tooltip(windowTitleHRTFData, hrtf_file)
-    hrtfSampleRateLabel = tk.Label(newWindow, text='Sample rate: ' + str(fs_H))
+    create_tooltip(windowTitleHRTFData, in_hrtf_file)
+    hrtfSampleRateLabel = tk.Label(hrtfFileDataWindow, text='Sample rate: ' + str(fs_H))
     hrtfSampleRateLabel.pack()
-    hrtfDataDimLabel = tk.Label(newWindow, text='Data dimensions: ' + str(HRIR.shape))
+    hrtfDataDimLabel = tk.Label(hrtfFileDataWindow, text='Data dimensions: ' + str(HRIR.shape))
     hrtfDataDimLabel.pack()
-    hrtfPlayFileButton = tk.Button(newWindow, text='Play HRTF', command=lambda:playAudio(hrtf_file))
+    hrtfPlayFileButton = tk.Button(hrtfFileDataWindow, text='Play HRTF', command=lambda:playAudio(in_hrtf_file))
     hrtfPlayFileButton.pack()
-    hrtfPauseFileButton = tk.Button(newWindow, text='Pause HRTF', command=lambda:pygame.mixer.music.pause())
+    hrtfPauseFileButton = tk.Button(hrtfFileDataWindow, text='Pause HRTF', command=lambda:pygame.mixer.music.pause())
     hrtfPauseFileButton.pack()
+    hrtfFileDataCloseWindowButton = tk.Button(hrtfFileDataWindow, text='Close', command=lambda:hrtfFileDataWindow.destroy())
+    hrtfFileDataCloseWindowButton.pack()
 
-def getSourceFileData():
-    newWindow = tk.Toplevel(root)
-    newWindow.iconphoto(False, icon_photo)
-    centered_window(newWindow)
-    newWindow.minsize(300, 120)
-    newWindow.title('Source File Data')
-    windowTitleSourceData = tk.Label(newWindow, text='\n' + source_file_print[len(source_file_print)-1] + '\n')
+def getSourceFileData(in_source_file):
+    sourceFileDataWindow = tk.Toplevel(root)
+    sourceFileDataWindow.iconphoto(False, icon_photo)
+    centered_window(sourceFileDataWindow)
+    sourceFileDataWindow.minsize(300, 120)
+    sourceFileDataWindow.title('Source File Data')
+    windowTitleSourceData = tk.Label(sourceFileDataWindow, text='\n' + os.path.basename(in_source_file) + '\n')
     windowTitleSourceData.pack()
-    create_tooltip(windowTitleSourceData, source_file)
-    sourceSampleRateLabel = tk.Label(newWindow, text='Sample rate: ' + str(fs_s))
+    create_tooltip(windowTitleSourceData, in_source_file)
+    sourceSampleRateLabel = tk.Label(sourceFileDataWindow, text='Sample rate: ' + str(fs_s))
     sourceSampleRateLabel.pack()
-    sourceDataDimLabel = tk.Label(newWindow, text='Data dimensions: ' + str(sig.shape))
+    sourceDataDimLabel = tk.Label(sourceFileDataWindow, text='Data dimensions: ' + str(sig.shape))
     sourceDataDimLabel.pack()
-    sourcePlayFileButton = tk.Button(newWindow, text='Play Source File', command=lambda:playAudio(source_file))
+    sourcePlayFileButton = tk.Button(sourceFileDataWindow, text='Play Source File', command=lambda:playAudio(in_source_file))
     sourcePlayFileButton.pack()
-    sourcePauseFileButton = tk.Button(newWindow, text='Pause Source File', command=lambda:pygame.mixer.music.pause())
+    sourcePauseFileButton = tk.Button(sourceFileDataWindow, text='Pause Source File', command=lambda:pygame.mixer.music.pause())
     sourcePauseFileButton.pack()
+    sourceFileDataCloseWindowButton = tk.Button(sourceFileDataWindow, text='Close', command=lambda:sourceFileDataWindow.destroy())
+    sourceFileDataCloseWindowButton.pack()
 
-def timeDomainVisualHRTF():
-    plt.figure(num=str('Time Domain for ' + os.path.basename(hrtf_file)))
+def timeDomainVisualHRTF(in_hrtf_file):
+    plt.figure(num=str('Time Domain for ' + os.path.basename(in_hrtf_file)))
     plt.plot(HRIR[:,0]) # left channel data
     plt.plot(HRIR[:,1]) # right channel data
     plt.xlabel('Time (samples)')
     plt.ylabel('Amplitude')
-    plt.title('HRIR at angle: ' + hrtf_file_print[len(hrtf_file_print)-1])
+    plt.title('HRIR at angle: ' + os.path.basename(in_hrtf_file))
     plt.legend(['Left','Right'])
     plt.show()
 
-def freqDomainVisualHRTF():
+def freqDomainVisualHRTF(in_hrtf_file):
     nfft = len(HRIR)*8
     HRTF = np.fft.fft(HRIR,n=nfft, axis=0)
     HRTF_mag = (2/nfft)*np.abs(HRTF[0:int(len(HRTF)/2)+1,:])
     HRTF_mag_dB = 20*np.log10(HRTF_mag)
 
     f_axis = np.linspace(0,fs_H/2,len(HRTF_mag_dB))
-    plt.figure(num=str('Frequency Domain for ' + os.path.basename(hrtf_file)))
+    plt.figure(num=str('Frequency Domain for ' + os.path.basename(in_hrtf_file)))
     plt.semilogx(f_axis, HRTF_mag_dB)
     plt.grid()
     plt.grid(which='minor', color="0.9")
-    plt.title('HRTF at angle: ' + hrtf_file_print[len(hrtf_file_print)-1])
+    plt.title('HRTF at angle: ' + os.path.basename(in_hrtf_file))
     plt.xlabel('Frequency (Hz)')
     plt.ylabel('Magnitude (dB)')
     plt.legend(['Left','Right'])
     plt.show()
 
-def stereoToMono():
+def stereoToMono(in_sig):
     global sig_mono
-    if len(sig.shape) > 1:
-        if sig.shape[1] > 1:
-            sig_mono = np.mean(sig, axis=1)
+    if len(in_sig.shape) > 1:
+        if in_sig.shape[1] > 1:
+            sig_mono = np.mean(in_sig, axis=1)
         else:
-            sig_mono = sig
-        newWindow = tk.Toplevel(root)
-        newWindow.iconphoto(False, icon_photo)
-        centered_window(newWindow)
-        newWindow.geometry('350x100')
-        newWindow.minsize(350,100)
-        newWindow.title('Stereo -> Mono')
-        windowTitleStereoToMonoLabel = tk.Label(newWindow, text='\n' + 'New source data dimensions: ' + str(sig_mono.shape) + '\n')
-        windowTitleStereoToMonoLabel.pack()
+            sig_mono = in_sig
+        messageWindow(message=('New source data dimensions:\n' + str(sig_mono.shape)), title='Stereo -> Mono', width=350, height=110)
     else:
-        sig_mono = sig
-        newWindow = tk.Toplevel(root)
-        newWindow.iconphoto(False, icon_photo)
-        centered_window(newWindow)
-        newWindow.geometry('350x100')
-        newWindow.minsize(350,100)
-        newWindow.title('Stereo -> Mono')
-        windowTitleStereoToMonoLabel = tk.Label(newWindow, text='\n' + 'Source file already mono.' + '\n')
-        windowTitleStereoToMonoLabel.pack()
+        sig_mono = in_sig
+        messageWindow(message='Source file is already mono.', title='Stereo -> Mono', width=350)
     resampleButton.config(state='active')
     
 def fs_resample(s1, f1, s2, f2):
@@ -289,42 +279,26 @@ def fs_resample(s1, f1, s2, f2):
     fmax = max([f1, f2])
     f1 = fmax
     f2 = fmax
-    global resampleWindow
-    global windowTitleResampleLabel
-    resampleWindow = tk.Toplevel(root)
-    resampleWindow.iconphoto(False, icon_photo)
-    centered_window(resampleWindow)
-    resampleWindow.geometry('250x150')
-    resampleWindow.minsize(250, 150)
-    resampleWindow.title('Resample')
-    windowTitleResampleLabel = tk.Label(resampleWindow, text='\n' + 'Resampled at: ' + str(fmax) + 'Hz' + '\n')
-    windowTitleResampleLabel.pack()
-    resampleSignalSourceDimensionsLabel = tk.Label(resampleWindow, text='Signal/source dimensions: ' + str(sig_mono.shape))
-    resampleSignalSourceDimensionsLabel.pack()
-    resampleHRIRDimensionsLabel = tk.Label(resampleWindow, text='HRIR Dimensions: ' + str(HRIR.shape))
-    resampleHRIRDimensionsLabel.pack()
+    
+    messageWindow(message=('Resampled at: ' + str(fmax) + 'Hz\n\n' + 'Signal/source dimensions: ' + str(sig_mono.shape) + '\n' + 'HRIR Dimensions: ' + str(HRIR.shape)), title='Resample', width=250, height=150)
+    
     timeDomainConvolveButton.config(state='active')
     return s1, f1, s2, f2
 
-def timeDomainConvolve():
+def timeDomainConvolve(in_sig_mono):
     global Bin_Mix
-    s_L = np.convolve(sig_mono,HRIR[:,0])
-    s_R = np.convolve(sig_mono,HRIR[:,1])
+    s_L = np.convolve(in_sig_mono,HRIR[:,0])
+    s_R = np.convolve(in_sig_mono,HRIR[:,1])
     
     Bin_Mix = np.vstack([s_L,s_R]).transpose()
-    newWindow = tk.Toplevel(root)
-    newWindow.iconphoto(False, icon_photo)
-    centered_window(newWindow)
-    newWindow.geometry('250x100')
-    newWindow.minsize(250, 100)
-    newWindow.title('Time Domain Convolve')
-    timeDomainConvolveWindowLabel = tk.Label(newWindow, text='\n' + 'Data dimensions: ' + str(Bin_Mix.shape) + '\n')
-    timeDomainConvolveWindowLabel.pack()
+    
+    messageWindow(message=('New data dimensions: ' + str(Bin_Mix.shape)), title='Time Domain Convolve', width=250)
+    
     exportConvolvedButton.config(state='active')
 
 # freq domain convolution goes here at some point
 
-def exportConvolved():
+def exportConvolved(in_Bin_Mix, in_fs_s):
     source_file_location = os.path.join(*source_file_print[:-1])
     export_directory = filedialog.askdirectory(title='Select Save Directory', initialdir=source_file_location)
     source_file_export_name = source_file_print[(len(source_file_print)-1)]
@@ -333,20 +307,12 @@ def exportConvolved():
     if export_directory:
         convolved_filename = str(source_file_export_name[:-4]) + '-' + str(hrtf_file_export_name[:-4]) + '-export.wav'
         export_filename = os.path.join(str(export_directory), str(convolved_filename))
-        sf.write(export_filename, Bin_Mix, fs_s)
+        sf.write(export_filename, in_Bin_Mix, in_fs_s)
     if not export_directory:
         return -1
 
-    newWindow = tk.Toplevel(root)
-    newWindow.iconphoto(False, icon_photo)
-    centered_window(newWindow)
-    newWindow.geometry('400x100')
-    newWindow.minsize(400, 100)
     if os.path.exists(export_filename):
-        newWindow.title('Export Successful')
-        windowTitleExportSuccessLabel = tk.Label(newWindow, text="\nFile successfully exported as:\n"+str(source_file_export_name[:-4]) + '-' + str(hrtf_file_export_name[:-4]) + '-export.wav')
-        windowTitleExportSuccessLabel.pack()
-        create_tooltip(windowTitleExportSuccessLabel, str(export_filename))
+        messageWindow(message=('File successfully exported as:\n' + str(source_file_export_name[:-4]) + '-' + str(hrtf_file_export_name[:-4]) + '-export.wav'), title='Export Successful', width=400, tooltip_text=str(export_filename))
     else:
         errorWindow(error_message='Export Failed')
 
@@ -380,37 +346,37 @@ def selectSOFAFile():
         else:
             return
 
-def getSOFAFileMetadata():
-    newWindow = tk.Toplevel(root)
-    newWindow.iconphoto(False, icon_photo)
-    centered_window(newWindow)
-    newWindow.geometry('400x400')
-    newWindow.title('SOFA File Metadata')
-    v = tk.Scrollbar(newWindow, orient='vertical')
+def getSOFAFileMetadata(in_sofa_file):
+    sofaMetadataWindow = tk.Toplevel(root)
+    sofaMetadataWindow.iconphoto(False, icon_photo)
+    centered_window(sofaMetadataWindow)
+    sofaMetadataWindow.geometry('400x400')
+    sofaMetadataWindow.title('SOFA File Metadata')
+    v = tk.Scrollbar(sofaMetadataWindow, orient='vertical')
     v.pack(side='right', fill='y')
     myString = ''
-    for attr in sofa.Database.open(sofa_file).Metadata.list_attributes():
-        myString = myString + ("{0}: {1}".format(attr, sofa.Database.open(sofa_file).Metadata.get_attribute(attr))) + '\n'
-    windowSOFAMetadataLabel = tk.Text(newWindow, width=100, height=100, wrap='word', yscrollcommand=v.set)
+    for attr in sofa.Database.open(in_sofa_file).Metadata.list_attributes():
+        myString = myString + ("{0}: {1}".format(attr, sofa.Database.open(in_sofa_file).Metadata.get_attribute(attr))) + '\n'
+    windowSOFAMetadataLabel = tk.Text(sofaMetadataWindow, width=100, height=100, wrap='word', yscrollcommand=v.set)
     windowSOFAMetadataLabel.insert('end', str(myString))
     windowSOFAMetadataLabel.pack()
     
     v.config(command=windowSOFAMetadataLabel.yview)
 
-def getSOFAFileDimensions():
-    newWindow = tk.Toplevel(root)
-    newWindow.iconphoto(False, icon_photo)
-    centered_window(newWindow)
-    newWindow.geometry('600x400')
-    newWindow.title('SOFA File Dimensions')
-    v = tk.Scrollbar(newWindow, orient='vertical')
+def getSOFAFileDimensions(in_sofa_file):
+    sofaDimensionsWindow = tk.Toplevel(root)
+    sofaDimensionsWindow.iconphoto(False, icon_photo)
+    centered_window(sofaDimensionsWindow)
+    sofaDimensionsWindow.geometry('600x400')
+    sofaDimensionsWindow.title('SOFA File Dimensions')
+    v = tk.Scrollbar(sofaDimensionsWindow, orient='vertical')
     v.pack(side='right', fill='y')
-    definitionsLabel = tk.Label(newWindow, text='C = Size of coordinate dimension (always three).\n\nI = Single dimension (always one).\n\nM = Number of measurements.\n\nR = Number of receivers or SH coefficients (depending on ReceiverPosition_Type).\n\nE = Number of emitters or SH coefficients (depending on EmitterPosition_Type).\n\nN = Number of samples, frequencies, SOS coefficients (depending on self.GLOBAL_DataType).')
+    definitionsLabel = tk.Label(sofaDimensionsWindow, text='C = Size of coordinate dimension (always three).\n\nI = Single dimension (always one).\n\nM = Number of measurements.\n\nR = Number of receivers or SH coefficients (depending on ReceiverPosition_Type).\n\nE = Number of emitters or SH coefficients (depending on EmitterPosition_Type).\n\nN = Number of samples, frequencies, SOS coefficients (depending on self.GLOBAL_DataType).')
     definitionsLabel.pack()
     myString = ''
-    for dimen in sofa.Database.open(sofa_file).Dimensions.list_dimensions():
-        myString = myString + ("{0}: {1}".format(dimen, sofa.Database.open(sofa_file).Dimensions.get_dimension(dimen))) + '\n'
-    windowSOFADimensionsLabel = tk.Text(newWindow, width=10, height=10, wrap='word', yscrollcommand=v.set)
+    for dimen in sofa.Database.open(in_sofa_file).Dimensions.list_dimensions():
+        myString = myString + ("{0}: {1}".format(dimen, sofa.Database.open(in_sofa_file).Dimensions.get_dimension(dimen))) + '\n'
+    windowSOFADimensionsLabel = tk.Text(sofaDimensionsWindow, width=10, height=10, wrap='word', yscrollcommand=v.set)
     windowSOFADimensionsLabel.insert('end', str(myString))
     windowSOFADimensionsLabel.pack()
 
@@ -1114,11 +1080,11 @@ selectHRTFFileButton = tk.Button(hrtfFrame, text='Select HRTF File (.wav)', comm
 selectHRTFFileButton.grid(row=0, column=0)
 selectHRTFFileLabel = tk.Label(hrtfFrame, text='HRTF file:\n', wraplength=120)
 selectHRTFFileLabel.grid(row=1, column=0)
-getHRTFFileDataButton = tk.Button(hrtfFrame, text='Get HRTF File Data', state='disabled', command=lambda:getHRTFFileData())
+getHRTFFileDataButton = tk.Button(hrtfFrame, text='Get HRTF File Data', state='disabled', command=lambda:getHRTFFileData(hrtf_file))
 getHRTFFileDataButton.grid(row=3, column=0)
-timeDomainVisualHRTFButton = tk.Button(hrtfFrame, text='HRTF Time Domain Visualization', state='disabled', command=lambda:timeDomainVisualHRTF())
+timeDomainVisualHRTFButton = tk.Button(hrtfFrame, text='HRTF Time Domain Visualization', state='disabled', command=lambda:timeDomainVisualHRTF(hrtf_file))
 timeDomainVisualHRTFButton.grid(row=4, column=0)
-freqDomainVisualHRTFButton = tk.Button(hrtfFrame, text='HRTF Frequency Domain Visualization', state='disabled', command=lambda:freqDomainVisualHRTF())
+freqDomainVisualHRTFButton = tk.Button(hrtfFrame, text='HRTF Frequency Domain Visualization', state='disabled', command=lambda:freqDomainVisualHRTF(hrtf_file))
 freqDomainVisualHRTFButton.grid(row=5, column=0)
 
 sourceFrame = tk.Frame(hrtfSourceSelectionFrame, borderwidth=10, relief='flat')
@@ -1127,11 +1093,11 @@ selectSourceFileButton = tk.Button(sourceFrame, text='Select source file (.wav)'
 selectSourceFileLabel = tk.Label(sourceFrame, text='Source file:\n', wraplength=120)
 selectSourceFileButton.grid(row=0, column=2)
 selectSourceFileLabel.grid(row=1, column=2)
-getSourceFileDataButton = tk.Button(sourceFrame, text='Get Source File Data', state='disabled', command=lambda:getSourceFileData())
+getSourceFileDataButton = tk.Button(sourceFrame, text='Get Source File Data', state='disabled', command=lambda:getSourceFileData(source_file))
 getSourceFileDataButton.grid(row=2, column=2)
 spectrogramButton = tk.Button(sourceFrame, text='View Spectrogram', state='disabled', command=lambda:spectrogramWindow(source_file))
 spectrogramButton.grid(row=3, column=2)
-stereoToMonoButton = tk.Button(sourceFrame, text='Source File Stereo -> Mono', state='disabled', command=lambda:stereoToMono())
+stereoToMonoButton = tk.Button(sourceFrame, text='Source File Stereo -> Mono', state='disabled', command=lambda:stereoToMono(sig))
 stereoToMonoButton.grid(row=4, column=2)
 
 hrtfOperationsFrame = tk.Frame(topSectionFrame, borderwidth=10, relief='flat')
@@ -1139,9 +1105,9 @@ hrtfOperationsFrame.grid(row=1, column=1)
 
 resampleButton = tk.Button(hrtfOperationsFrame, text='Resample', state='disabled', command=lambda:fs_resample(sig_mono, fs_s, HRIR, fs_H))
 resampleButton.grid(row=1, column=1)
-timeDomainConvolveButton = tk.Button(hrtfOperationsFrame, text='Time Domain Convolve', state='disabled', command=lambda:timeDomainConvolve())
+timeDomainConvolveButton = tk.Button(hrtfOperationsFrame, text='Time Domain Convolve', state='disabled', command=lambda:timeDomainConvolve(sig_mono))
 timeDomainConvolveButton.grid(row=2, column=1)
-exportConvolvedButton = tk.Button(hrtfOperationsFrame, text='Export Convolved', state='disabled', command=lambda:exportConvolved())
+exportConvolvedButton = tk.Button(hrtfOperationsFrame, text='Export Convolved', state='disabled', command=lambda:exportConvolved(Bin_Mix, fs_s))
 exportConvolvedButton.grid(row=3, column=1)
 
 sectionalLabel = tk.Label(rootFrame, text='\n')
@@ -1169,9 +1135,9 @@ bottomLeftFrame.grid(row=2, column=0)
 bottomRightFrame = tk.Frame(bottomSectionFrame, borderwidth=10, relief='flat')
 bottomRightFrame.grid(row=2, column=2)
 
-getSOFAFileMetadataButton = tk.Button(bottomLeftFrame, text='Get SOFA File Metadata', state='disabled', command=lambda:getSOFAFileMetadata())
+getSOFAFileMetadataButton = tk.Button(bottomLeftFrame, text='Get SOFA File Metadata', state='disabled', command=lambda:getSOFAFileMetadata(sofa_file))
 getSOFAFileMetadataButton.grid(row=0, column=0)
-getSOFAFileDimensionsButton = tk.Button(bottomRightFrame, text='Get SOFA File Dimensions', state='disabled', command=lambda:getSOFAFileDimensions())
+getSOFAFileDimensionsButton = tk.Button(bottomRightFrame, text='Get SOFA File Dimensions', state='disabled', command=lambda:getSOFAFileDimensions(sofa_file))
 getSOFAFileDimensionsButton.grid(row=0, column=0)
 
 sofaMeasurementTextBox = tk.Entry(bottomLeftFrame, state='disabled', width=5, textvariable=sofaMeasurementStringVar)
