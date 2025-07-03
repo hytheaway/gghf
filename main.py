@@ -10,14 +10,14 @@ import tempfile # <- adapting to differing os temp file locations
 
 os.environ['LIBROSA_CACHE_DIR'] = str(tempfile.gettempdir()) # <- must be called before importing librosa
 
-import numpy as np # <- matrix calc
+import numpy as np # <- matrix calc & more (but mostly matrix calc)
 import matplotlib.pyplot as plt # <- data visualization 
 import soundfile as sf # <- read audio into ndarray
 import sofa # <- read SOFA HRTFs
 import librosa # <- resample function
 from scipy import signal # <- fast convolution function
 from scipy.io import wavfile # <- used for spectrogram
-import pygame # <- for playing audio files directly.
+import pygame # <- for playing audio files directly
 import tkinter as tk # <- reliable, if clunky, gui
 from tkinter import filedialog # <- gui file selection from disk
 from tkinter import font # <- ensures fonts are system-compatible
@@ -905,6 +905,17 @@ def spectrogramWindow(audio_file_path:str):
     viewSpectrogramButton.grid(row=7, column=1)
 
 def spectrogram(audio_file_path:str, start_ms:str, end_ms:str, dynamic_range_min:str, dynamic_range_max:str, plot_title:str):
+    """
+    Plots spectrogram with given parameters audio_file_path, start_ms, end_ms, dynamic_range_min, dynamic_range_max, and plot_title. start_ms will default to 0ms, end_ms will default to the length of the given audio file in ms, dynamic_range_min and dynamic_range_max will default to auto-calculations by matplotlib, and plot_title defaults to the file name of the given audio file.
+
+    Args:
+        audio_file_path (str): Path to audio file to be plotted.
+        start_ms (str): Start time of graph in milliseconds. Defaults to 0.
+        end_ms (str): End time of graphs in milliseconds. Defaults to (len(samples)/samplerate) * 1000
+        dynamic_range_min (str): Lower bound dynamic range of graph in dB. Defaults to auto-calculation by matplotlib.
+        dynamic_range_max (str): Upper bound dynamic range of graph in dB. Defaults to auto-calculation by matplotlib.
+        plot_title (str): Title of plot. Defaults to file name of given audio file.
+    """    
     sr, samples = wavfile.read(str(audio_file_path))
     
     if not plot_title:
