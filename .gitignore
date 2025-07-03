@@ -1,6 +1,5 @@
 .DS_Store
 .venv
-.vscode
 _pyinstaller
 __pycache__
 _nuitka
