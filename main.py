@@ -632,7 +632,7 @@ def plotHRIR(in_sofa_file, legend:list, measurement:int, emitter:int):
 
 def plotHRTF(in_sofa_file, legend:list, xlim:str, ylim:str, measurement:int, emitter:int):
     """
-    Plots a head-related transfer function graph for a given .sofa file with a given legend, x-axis bounds, y-axis bounds, measurement index, and emitter.
+    Plots a head-related transfer function graph for a given .sofa file with a given legend, x-axis bounds, y-axis bounds, measurement index, and emitter. If multiple SOFA files are selected, they will all be plotted on the same graph.
 
     Args:
         in_sofa_file (str): Path to sofa file.
