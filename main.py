@@ -1098,7 +1098,7 @@ def sofaHelpPage():
     
     viewSOFAFileTutorialLabel = tk.Label(tutorialWindowContentFrame, text='"View SOFA File/View SOFA HRTF"\nTakes the above selected values\nand presents a 3D view of the .SOFA file,\n in addition to individual measurements\nfrom the .SOFA file.\nIf multiple .SOFA files are selected,\n the only graph displayed will be a layered HRTF graph.\n')
     viewSOFAFileTutorialLabel.grid(row=6, column=0)
-    saveSOFAFileTutorialLabel = tk.Label(tutorialWindowContentFrame, text='"Save all SOFA graphs/Save SOFA HRTF"\nSaves graphs/plots for source positions,\nhead-related impulse response, and head-related transfer function\nfor the provided azimuth, elevation, emitter, and measurement index to\nthe provided directory.\nIf multiple .SOFA files are selected,\n the only graph saved will be a layerd HRTF graph.\n')
+    saveSOFAFileTutorialLabel = tk.Label(tutorialWindowContentFrame, text='"Save all SOFA graphs/Save SOFA HRTF"\nSaves graphs/plots for source positions,\nhead-related impulse response, and head-related transfer function\nfor the provided azimuth, elevation, emitter, and measurement index to\nthe provided directory.\nIf multiple .SOFA files are selected,\n the only graph saved will be a layered HRTF graph.\n')
     saveSOFAFileTutorialLabel.grid(row=6, column=2)
     renderSOFATutorialLabel = tk.Label(tutorialWindowContentFrame, text='"Render Source with SOFA File"\nConvolves the source file with\nthe desired values in the .SOFA file.\nDisabled if multiple .SOFA files are selected.\n')
     renderSOFATutorialLabel.grid(row=7, column=1)
