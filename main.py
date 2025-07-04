@@ -408,33 +408,62 @@ def exportConvolved(in_Bin_Mix:np.ndarray, in_fs_s:int, in_source_file:str, in_h
         errorWindow(error_message='Export Failed')
 
 def selectSOFAFile():
-    global sofa_file
     global sofa_file_print
-    sofa_file = filedialog.askopenfilename(filetypes=[('.SOFA files', '.sofa')])
-    try:
-        if sofa_file:
-            metadata_test = sofa.Database.open(sofa_file).Metadata.list_attributes()
-    except OSError:
-        errorWindow('\nError loading file:\n\n' + str(os.path.basename(sofa_file)) + '\n\nOS error.\nDoes this file exist on the local drive?\n\nAlternatively, does this SOFA file\ncontain correct metadata?', title='Error', width=300, height=250, tooltip_text=sofa_file)
-        return
-    else:
-        if sofa_file:
-            sofa_file_print = sofa_file.split('/')
-            selectSOFAFileLabel.config(text='SOFA file:\n' + shorten_file_name(sofa_file_print[len(sofa_file_print)-1], 20))
-            create_tooltip(selectSOFAFileLabel, text=str(sofa_file))
-            getSOFAFileMetadataButton.config(state='active')
-            getSOFAFileDimensionsButton.config(state='active')
-            sofaRenderButton.config(state='active')
-            sofaViewButton.config(state='active')
-            sofaSaveButton.config(state='active')
-            sofaMeasurementTextBox.config(state='normal')
-            sofaEmitterTextBox.config(state='normal')
-            azimuthTextBox.config(state='normal')
-            elevationTextBox.config(state='normal')
-            frequencyXLimTextBox.config(state='normal')
-            magnitudeYLimTextBox.config(state='normal')
-        else:
+    global sofa_file_path_list
+    global sofa_mode_selection
+    
+    sofa_file_path_list = filedialog.askopenfilenames(filetypes=[('.SOFA files', '.sofa')])
+    if len(sofa_file_path_list) > 1:
+        sofa_mode_selection = 1
+        for file in sofa_file_path_list:
+            if file:
+                try:
+                    metadata_test = sofa.Database.open(file).Metadata.list_attributes()
+                except OSError:
+                    errorWindow('\nError loading file:\n\n' + str(os.path.basename(file)) + '\n\nOS error.\nDoes this file exist on the local drive?\n\nAlternatively, does this SOFA file\ncontain correct metadata?', title='Error', width=300, height=250, tooltip_text=file)
+                    return
+                else:
+                    continue
+        selectSOFAFileLabel.config(text='SOFA file:\nHover to see SOFA files.')
+        create_tooltip(selectSOFAFileLabel, ('NOTE: Graph viewing only - Rendering disabled when multiple SOFA files are selected.\n' + '\n'.join(map(str, sofa_file_path_list))))
+        getSOFAFileMetadataButton.config(state='disabled')
+        getSOFAFileDimensionsButton.config(state='disabled')
+        azimuthTextBox.config(state='disabled')
+        elevationTextBox.config(state='disabled')
+        sofaRenderButton.config(state='disabled')
+        sofaViewButton.config(text='View SOFA HRTF')
+        sofaSaveButton.config(text='Save SOFA HRTF')
+        
+    if len(sofa_file_path_list) == 1:
+        sofa_mode_selection = 0
+        try:
+            if sofa_file_path_list[0]:
+                metadata_test = sofa.Database.open(sofa_file_path_list[0]).Metadata.list_attributes()
+        except OSError:
+            errorWindow('\nError loading file:\n\n' + str(os.path.basename(sofa_file_path_list[0])) + '\n\nOS error.\nDoes this file exist on the local drive?\n\nAlternatively, does this SOFA file\ncontain correct metadata?', title='Error', width=300, height=250, tooltip_text=sofa_file_path_list[0])
             return
+        else:
+            if sofa_file_path_list[0]:
+                sofa_file_print = sofa_file_path_list[0].split('/')
+                selectSOFAFileLabel.config(text='SOFA file:\n' + shorten_file_name(os.path.basename(sofa_file_path_list[0]), 20))
+                create_tooltip(selectSOFAFileLabel, text=str(sofa_file_path_list[0]))
+                getSOFAFileMetadataButton.config(state='active')
+                getSOFAFileDimensionsButton.config(state='active')
+                azimuthTextBox.config(state='normal')
+                elevationTextBox.config(state='normal')
+                sofaRenderButton.config(state='active')
+                sofaViewButton.config(text='View SOFA File')
+                sofaSaveButton.config(text='Save all SOFA graphs')
+            else:
+                return
+
+    if sofa_file_path_list:
+        sofaViewButton.config(state='active')
+        sofaSaveButton.config(state='active')
+        sofaMeasurementTextBox.config(state='normal')
+        sofaEmitterTextBox.config(state='normal')
+        frequencyXLimTextBox.config(state='normal')
+        magnitudeYLimTextBox.config(state='normal')
 
 def getSOFAFileMetadata(in_sofa_file:str):
     """
@@ -519,7 +548,7 @@ def plot_coordinates(in_sofa_file:str, fig:plt.Figure):
     Returns:
         mpl_toolkits.mplot3d.art3d.Line3DCollection: 3D plot data
     """    
-    SOFA_HRTF = sofa.Database.open(sofa_file)
+    SOFA_HRTF = sofa.Database.open(in_sofa_file)
     x0 = SOFA_HRTF.Source.Position.get_values(system='cartesian')
     n0 = x0
     ax = fig.add_subplot(111, projection='3d')
@@ -576,9 +605,9 @@ def computeHRTF(in_sofa_file:str, measurement:int, emitter:int):
     HRTF_mag_dB = 20*np.log10(HRTF_mag)
     f_axis = np.linspace(0, (SOFA_HRTF.Data.SamplingRate.get_values(indices={"M":measurement, "R":receiver, "E":emitter}))/2, len(HRTF_mag_dB))
     
-    return f_axis, HRTF_mag_dB
+    return f_axis, HRTF_mag_dB, receiver_legend
 
-def plotHRIR(in_sofa_file:str, legend:list, measurement:int, emitter:int):
+def plotHRIR(in_sofa_file, legend:list, measurement:int, emitter:int):
     """
     Plots a head-related impulse response graph for a given .sofa file with a given legend, measurement index, and emitter.
 
@@ -601,7 +630,7 @@ def plotHRIR(in_sofa_file:str, legend:list, measurement:int, emitter:int):
     
     return
 
-def plotHRTF(in_sofa_file:str, legend:list, xlim:str, ylim:str, measurement:int, emitter:int):
+def plotHRTF(in_sofa_file, legend:list, xlim:str, ylim:str, measurement:int, emitter:int):
     """
     Plots a head-related transfer function graph for a given .sofa file with a given legend, x-axis bounds, y-axis bounds, measurement index, and emitter.
 
@@ -613,27 +642,39 @@ def plotHRTF(in_sofa_file:str, legend:list, xlim:str, ylim:str, measurement:int,
         measurement (int): Measurement index to plot.
         emitter (int): Emitter to plot.
     """    
-    legend = ['Left', 'Right']
-    
     xlim_start, xlim_end = sanitizeBounds(xlim)
     ylim_start, ylim_end = sanitizeBounds(ylim)
     
-    plt.figure(figsize=(15, 5), num=('Head-Related Transfer Function at M={0} E={1} for '.format(measurement, emitter) + os.path.basename(in_sofa_file)))
-    f_axis, HRTF_mag_dB = computeHRTF(in_sofa_file, measurement, emitter)
-    plt.semilogx(f_axis, HRTF_mag_dB)
+    if sofa_mode_selection == 0:
+        plt.figure(figsize=(15, 5), num=('Head-Related Transfer Function at M={0} E={1} for '.format(measurement, emitter) + os.path.basename(in_sofa_file)))
+        f_axis, HRTF_mag_dB, legend = computeHRTF(in_sofa_file, measurement, emitter)
+        plt.semilogx(f_axis, HRTF_mag_dB)
+        plt.title('{0}: HRTF at M={1} for emitter {2}'.format(os.path.basename(in_sofa_file), measurement, emitter))
+    
+    if sofa_mode_selection == 1:
+        in_sofa_files_list = in_sofa_file
+        in_sofa_files_list = ', '.join(in_sofa_files_list)
+        in_sofa_files_list = in_sofa_files_list.split(",")
+        in_sofa_files_list = [file.strip(' ') for file in in_sofa_files_list]        
+        plt.figure(figsize=(15, 5), num=str('Left-Channel Head-Related Transfer Function Comparison'))
+        for i in in_sofa_files_list:
+            legend.append(os.path.basename(i))
+            f_axis, HRTF_mag_dB, receiver_legend = computeHRTF(i, measurement, emitter)
+            plt.semilogx(f_axis, HRTF_mag_dB)
+        plt.title('Left-Channel HRTF Comparison at M={0} for emitter {1}'.format(measurement, emitter))
+    
     ax = plt.gca()
-    ax.set_xlim([int(xlim_start), int(xlim_end)])
-    ax.set_ylim([int(ylim_start), int(ylim_end)])
-    plt.grid()
-    plt.grid(which='minor', color="0.9")
-    plt.title('{0}: HRTF at M={1} for emitter {2}'.format(os.path.basename(in_sofa_file), measurement, emitter))
+    ax.set_xlim([int(xlim_start), int(xlim_end)]) # Bound the x-axis
+    ax.set_ylim([int(ylim_start), int(ylim_end)]) # Bound the y-axis
+    plt.grid() # Horizontal grid line
+    plt.grid(which='minor', color="0.9") # Vertical grid lines
     plt.xlabel('Frequency (Hz)')
     plt.ylabel('Magnitude (dB)')
     plt.legend(legend)
     
     return
 
-def viewSOFAGraphs(in_sofa_file:str, xlim:str, ylim:str, measurement:int=0, emitter:int=1):
+def viewSOFAGraphs(in_sofa_file, xlim:str, ylim:str, measurement:int=0, emitter:int=1):
     """
     Calls functions to plot source positions, HRIR, and HRTF for a given SOFA file, and displays them. Provides default values if they aren't given.
 
@@ -643,7 +684,8 @@ def viewSOFAGraphs(in_sofa_file:str, xlim:str, ylim:str, measurement:int=0, emit
         ylim (str): Bounds for the y-axis, should be passed in the format [lower, upper] (e.g., [-150, 0]).
         measurement (int, optional): Measurement index to plot. Defaults to 0.
         emitter (int, optional): Emitter to plot. Defaults to 1.
-    """    
+    """
+    
     if not xlim:
         xlim = '20, 20000'
     if not ylim:
@@ -655,11 +697,14 @@ def viewSOFAGraphs(in_sofa_file:str, xlim:str, ylim:str, measurement:int=0, emit
     
     legend = []
     
-    # plot source coordinates
-    sofa_pos_fig = plt.figure(figsize=(10, 7), num=str('SOFA Source Positions for ' + os.path.basename(in_sofa_file)))
-    plot_coordinates(in_sofa_file, sofa_pos_fig)
-    
-    plotHRIR(in_sofa_file, legend, measurement, emitter)
+    if sofa_mode_selection == 0:
+        in_sofa_file = in_sofa_file[0]
+
+        # plot source coordinates
+        sofa_pos_fig = plt.figure(figsize=(10, 7), num=str('SOFA Source Positions for ' + os.path.basename(in_sofa_file)))
+        plot_coordinates(in_sofa_file, sofa_pos_fig)
+        
+        plotHRIR(in_sofa_file, legend, measurement, emitter)
     
     plotHRTF(in_sofa_file, legend, xlim, ylim, measurement, emitter)
     
@@ -668,7 +713,7 @@ def viewSOFAGraphs(in_sofa_file:str, xlim:str, ylim:str, measurement:int=0, emit
     plt.close()
     return
 
-def saveSOFAGraphs(in_sofa_file:str, xlim:str, ylim:str, measurement:int=0, emitter:int=1):
+def saveSOFAGraphs(in_sofa_file, xlim:str, ylim:str, measurement:int=0, emitter:int=1):
     """
     Calls functions to plot source positions, HRIR, and HRTF for a given SOFA file, and saves them. Provides default values if they aren't given.
 
@@ -682,16 +727,6 @@ def saveSOFAGraphs(in_sofa_file:str, xlim:str, ylim:str, measurement:int=0, emit
     Returns:
     """    
     plt.close()
-    export_directory = filedialog.askdirectory(title='Select Save Directory', initialdir=os.path.dirname(in_sofa_file))
-    if not export_directory:
-        errorWindow(error_message='Directory not given.')
-        return -1
-    export_directory = os.path.join(export_directory, os.path.basename(in_sofa_file))
-    export_directory = export_directory + '-measurements'
-    try:
-        os.mkdir(export_directory)
-    except FileExistsError:
-        pass
     
     if not xlim:
         xlim = '20, 20000'
@@ -702,23 +737,45 @@ def saveSOFAGraphs(in_sofa_file:str, xlim:str, ylim:str, measurement:int=0, emit
     if not emitter:
         emitter = 1
     legend = []
-
-    # plot & save source coordinates
-    sofa_pos_fig = plt.figure(figsize=(10, 7), num=str('SOFA Source Positions for ' + os.path.basename(in_sofa_file)))
-    plot_coordinates(in_sofa_file, sofa_pos_fig)
-    plt.savefig(os.path.join(export_directory, ('SOFA_Source_Positions_for_' + os.path.basename(in_sofa_file).replace(' ', '_') + '.png')))
     
-    # plot & save HRIR
-    plotHRIR(in_sofa_file, legend, measurement, emitter)
-    plt.savefig(os.path.join(export_directory, ('Head-Related_Impulse_Response_at_M={0}_E={1}_for_'.format(measurement, emitter) + os.path.basename(in_sofa_file).replace(' ', '_') + '.png')))
+    export_directory = filedialog.askdirectory(title='Select Save Directory', initialdir=os.path.dirname(in_sofa_file[0]))
+    if not export_directory:
+        errorWindow(error_message='Directory not given.')
+        return -1
+    
+    if sofa_mode_selection == 0:
+        in_sofa_file = in_sofa_file[0]
+        
+        export_directory = os.path.join(export_directory, os.path.basename(in_sofa_file))
+        export_directory = export_directory + '-measurements'
+        try:
+            os.mkdir(export_directory)
+        except FileExistsError:
+            pass
+        
+        # plot & save source coordinates
+        sofa_pos_fig = plt.figure(figsize=(10, 7), num=str('SOFA Source Positions for ' + os.path.basename(in_sofa_file)))
+        plot_coordinates(in_sofa_file, sofa_pos_fig)
+        plt.savefig(os.path.join(export_directory, ('SOFA_Source_Positions_for_' + os.path.basename(in_sofa_file).replace(' ', '_') + '.png')))
+        
+        # plot & save HRIR
+        plotHRIR(in_sofa_file, legend, measurement, emitter)
+        plt.savefig(os.path.join(export_directory, ('Head-Related_Impulse_Response_at_M={0}_E={1}_for_'.format(measurement, emitter) + os.path.basename(in_sofa_file).replace(' ', '_') + '.png')))
+    
+    if sofa_mode_selection == 1:
+        export_directory = os.path.join(export_directory, 'hrtf-comparison-measurements')
+        try:
+            os.mkdir(export_directory)
+        except FileExistsError:
+            pass
     
     # plot & save HRTF
     plotHRTF(in_sofa_file, legend, xlim, ylim, measurement, emitter)
-    plt.savefig(os.path.join(export_directory, ('Head-Related_Transfer_Function_at_M={0}_E={1}_for_'.format(measurement, emitter) + os.path.basename(in_sofa_file).replace(' ', '_') + '.png')))
+    plt.savefig(os.path.join(export_directory, ('Left-Channel_HRTF_Comparison_at_M={0}_for_emitter_{1}'.format(measurement, emitter) + '.png')))
     
     plt.close()
     
-    messageWindow('Successfully exported to:\n' + (os.path.basename(in_sofa_file) + '-measurements'), title='Export Successful', width=400, tooltip_text=export_directory)
+    messageWindow('Successfully exported to:\n' + (os.path.basename(export_directory)), title='Export Successful', width=400, tooltip_text=export_directory)
 
 def renderWithSOFA(angle:str, elev:str, in_source_file:str, in_sofa_file:str, target_fs:int=48000):
     """
@@ -1019,7 +1076,7 @@ def sofaHelpPage():
     sofaTitleTutorialLabel = tk.Label(tutorialWindowContentFrame, text='SOFA Functions\n', font=("TkDefaultFont", str(parse_font_dict['size'] + 4), "bold"))
     sofaTitleTutorialLabel.grid(row=0, column=1)
     
-    selectSOFAFileTutorialLabel = tk.Label(tutorialWindowContentFrame, text='"Select SOFA File"\nPresents dialogue box for selecting .SOFA file.\n')
+    selectSOFAFileTutorialLabel = tk.Label(tutorialWindowContentFrame, text='"Select SOFA File"\nPresents dialogue box for selecting .SOFA file(s).\n')
     selectSOFAFileTutorialLabel.grid(row=1, column=1)
     getSOFAFileMetadataTutorialLabel = tk.Label(tutorialWindowContentFrame, text='"Get SOFA File Metadata"\nPresents metadata embedded in the loaded SOFA file.\nFollows SOFA convention.\n')
     getSOFAFileMetadataTutorialLabel.grid(row=2, column=0)
@@ -1039,11 +1096,11 @@ def sofaHelpPage():
     desiredElevationTutorialLabel = tk.Label(tutorialWindowContentFrame, text='"Desired elevation (in deg)"\nEnter elevation for rendering with source file. Defaults to 0deg.\nSelectable elevation for viewing .SOFA file plot, and for rendering.\n')
     desiredElevationTutorialLabel.grid(row=5, column=2)
     
-    viewSOFAFileTutorialLabel = tk.Label(tutorialWindowContentFrame, text='"View SOFA File"\nTakes the above selected values\nand presents a 3D view of the .SOFA file,\n in addition to individual measurements\nfrom the .SOFA file.\n')
+    viewSOFAFileTutorialLabel = tk.Label(tutorialWindowContentFrame, text='"View SOFA File/View SOFA HRTF"\nTakes the above selected values\nand presents a 3D view of the .SOFA file,\n in addition to individual measurements\nfrom the .SOFA file.\nIf multiple .SOFA files are selected,\n the only graph displayed will be a layered HRTF graph.\n')
     viewSOFAFileTutorialLabel.grid(row=6, column=0)
-    saveSOFAFileTutorialLabel = tk.Label(tutorialWindowContentFrame, text='"Save all SOFA graphs"\nSaves graphs/plots for source positions,\nhead-related impulse response, and head-related transfer function\nfor the provided azimuth, elevation, emitter, and measurement index to\nthe provided directory.\n')
+    saveSOFAFileTutorialLabel = tk.Label(tutorialWindowContentFrame, text='"Save all SOFA graphs/Save SOFA HRTF"\nSaves graphs/plots for source positions,\nhead-related impulse response, and head-related transfer function\nfor the provided azimuth, elevation, emitter, and measurement index to\nthe provided directory.\nIf multiple .SOFA files are selected,\n the only graph saved will be a layerd HRTF graph.\n')
     saveSOFAFileTutorialLabel.grid(row=6, column=2)
-    renderSOFATutorialLabel = tk.Label(tutorialWindowContentFrame, text='"Render Source with SOFA File"\nConvolves the source file with\nthe desired values in the .SOFA file.\n')
+    renderSOFATutorialLabel = tk.Label(tutorialWindowContentFrame, text='"Render Source with SOFA File"\nConvolves the source file with\nthe desired values in the .SOFA file.\nDisabled if multiple .SOFA files are selected.\n')
     renderSOFATutorialLabel.grid(row=7, column=1)
     
     prevButton = tk.Button(tutorialWindowContentFrame, text='<- Previous (HRTF Help)', command=lambda:hrtfHelpPage())
@@ -1097,7 +1154,7 @@ def generalHelpPage():
     commonHelpTitleTutorialLabel = tk.Label(tutorialWindowContentFrame, text='Tips/Tricks', font=("TkDefaultFont", str(parse_font_dict['size'] + 2), "bold"))
     commonHelpTitleTutorialLabel.grid(row=3,column=0)
     commonHelpDescTutorialLabel = tk.Label(tutorialWindowContentFrame, text='''
-    * 'Source File Stereo -> Mono' must ALWAYS be pressed before using HRTF functions!
+    * 'Source File Stereo -> Mono' must ALWAYS be pressed before convolving with HRTF!
     * You can use 'Tab' to select a subsequent text box.
     * The default values for SOFA functions are as follows:
         - Measurement Index: 0
@@ -1128,6 +1185,7 @@ root = tk.Tk()
 root.minsize(565, 910)
 root.grid_columnconfigure(0, weight=1)
 root.grid_rowconfigure(0, weight=1)
+
 centered_window(root)
 icon_photo = tk.PhotoImage(file='assets/happyday.png')
 root.iconphoto(False, icon_photo)
@@ -1195,9 +1253,10 @@ sofaLabel.grid(row=3, column=0, columnspan=3)
 
 bottomSectionFrame = tk.Frame(rootFrame, borderwidth=10, relief='ridge')
 bottomSectionFrame.grid(row=4, column=0, columnspan=3)
+
 selectSOFAFileButton = tk.Button(bottomSectionFrame, text='Select SOFA File', command=lambda:selectSOFAFile())
-selectSOFAFileLabel = tk.Label(bottomSectionFrame, text='SOFA file:\n', wraplength=240)
 selectSOFAFileButton.grid(row=0, column=0, columnspan=3)
+selectSOFAFileLabel = tk.Label(bottomSectionFrame, text='SOFA file:\n', wraplength=240)
 selectSOFAFileLabel.grid(row=1, column=0, columnspan=3)
 
 sofaMeasurementStringVar = tk.StringVar()
@@ -1212,9 +1271,9 @@ bottomLeftFrame.grid(row=2, column=0)
 bottomRightFrame = tk.Frame(bottomSectionFrame, borderwidth=10, relief='flat')
 bottomRightFrame.grid(row=2, column=2)
 
-getSOFAFileMetadataButton = tk.Button(bottomLeftFrame, text='Get SOFA File Metadata', state='disabled', command=lambda:getSOFAFileMetadata(sofa_file))
+getSOFAFileMetadataButton = tk.Button(bottomLeftFrame, text='Get SOFA File Metadata', state='disabled', command=lambda:getSOFAFileMetadata(sofa_file_path_list[0]))
 getSOFAFileMetadataButton.grid(row=0, column=0)
-getSOFAFileDimensionsButton = tk.Button(bottomRightFrame, text='Get SOFA File Dimensions', state='disabled', command=lambda:getSOFAFileDimensions(sofa_file))
+getSOFAFileDimensionsButton = tk.Button(bottomRightFrame, text='Get SOFA File Dimensions', state='disabled', command=lambda:getSOFAFileDimensions(sofa_file_path_list[0]))
 getSOFAFileDimensionsButton.grid(row=0, column=0)
 
 sofaMeasurementTextBox = tk.Entry(bottomLeftFrame, state='disabled', width=5, textvariable=sofaMeasurementStringVar)
@@ -1244,18 +1303,18 @@ elevationTextBox.grid(row=5, column=0)
 elevationLabel = tk.Label(bottomRightFrame, text='Desired elevation (in deg)')
 elevationLabel.grid(row=6, column=0)
 
-sofaViewButton = tk.Button(bottomSectionFrame, text='View SOFA File', state='disabled', command=lambda:viewSOFAGraphs(sofa_file, freqXLimStringVar.get(), magYLimStringVar.get(), sofaMeasurementStringVar.get(), sofaEmitterStringVar.get()))
-sofaViewButton.grid(row=3, column=0, columnspan=2)
-sofaSaveButton = tk.Button(bottomSectionFrame, text='Save all SOFA graphs', state='disabled', command=lambda:saveSOFAGraphs(sofa_file, freqXLimStringVar.get(), magYLimStringVar.get(), sofaMeasurementStringVar.get(), sofaEmitterStringVar.get()))
-sofaSaveButton.grid(row=3, column=1, columnspan=2)
-sofaRenderButton = tk.Button(bottomSectionFrame, text='Render Source with SOFA file', state='disabled', command=lambda:renderWithSOFA(azimuthStringVar.get(), elevationStringVar.get(), source_file, sofa_file))
-sofaRenderButton.grid(row=4, column=0, columnspan=3)
+sofaViewButton = tk.Button(bottomSectionFrame, text='View SOFA File', state='disabled', command=lambda:viewSOFAGraphs(sofa_file_path_list, freqXLimStringVar.get(), magYLimStringVar.get(), sofaMeasurementStringVar.get(), sofaEmitterStringVar.get()))
+sofaViewButton.grid(row=4, column=0, columnspan=2)
+sofaSaveButton = tk.Button(bottomSectionFrame, text='Save all SOFA graphs', state='disabled', command=lambda:saveSOFAGraphs(sofa_file_path_list, freqXLimStringVar.get(), magYLimStringVar.get(), sofaMeasurementStringVar.get(), sofaEmitterStringVar.get()))
+sofaSaveButton.grid(row=4, column=1, columnspan=2)
+sofaRenderButton = tk.Button(bottomSectionFrame, text='Render Source with SOFA file', state='disabled', command=lambda:renderWithSOFA(azimuthStringVar.get(), elevationStringVar.get(), source_file, sofa_file_path_list[0]))
+sofaRenderButton.grid(row=5, column=0, columnspan=3)
 
 tutorialButton = tk.Button(rootFrame, text='Help', command=lambda:createHelpWindow())
-tutorialButton.grid(row=5, column=0, sticky='W')
+tutorialButton.grid(row=6, column=0, sticky='W')
 
 quitButton = tk.Button(rootFrame, text='Quit', command=lambda:quit())
-quitButton.grid(row=5, column=2, sticky='E')
+quitButton.grid(row=6, column=2, sticky='E')
 
 # prevents the window from appearing at the bottom of the stack
 root.focus_force()
