@@ -5,7 +5,6 @@
 # also please keep in mind that this isn't supposed to be "efficient" or "clean" or "lightweight".
 # this is meant to be the most brute force way to do all my hrtf processing in one file with one interface.
 
-from email.policy import default
 import sys  # <- replacement for pythonic quit(), which doesn't play nicely with cx_freeze
 import os  # <- reading files from disk, adapting to differing os directory path conventions
 import tempfile  # <- adapting to differing os temp file locations
@@ -37,7 +36,7 @@ import darkdetect  # <- detects os light/dark mode
 from base64 import b64decode  # <- decode bitmap image backup for asset
 
 if sys.platform == "win32":
-    import pywinstyles
+    import pywinstyles # <- aesthetics on dark mode for windows only
 
 librosa.cache.clear(warn=False)
 
