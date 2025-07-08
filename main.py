@@ -5,6 +5,7 @@
 # also please keep in mind that this isn't supposed to be "efficient" or "clean" or "lightweight".
 # this is meant to be the most brute force way to do all my hrtf processing in one file with one interface.
 
+from email.policy import default
 import sys  # <- replacement for pythonic quit(), which doesn't play nicely with cx_freeze
 import os  # <- reading files from disk, adapting to differing os directory path conventions
 import tempfile  # <- adapting to differing os temp file locations
@@ -1898,9 +1899,6 @@ root.minsize(565, 910)
 root.grid_columnconfigure(0, weight=1)
 root.grid_rowconfigure(0, weight=1)
 
-if sys.platform == "win32":
-    apply_theme_to_titlebar(root)
-
 centered_window(root)
 try:
     icon_photo = tk.PhotoImage(file="share/happyday.png")
@@ -2200,9 +2198,15 @@ root.focus_force()
 
 root.protocol("WM_DELETE_WINDOW", lambda: sys.exit())
 
+if sys.platform != 'win32':
+    ttkStyles = ttk.Style()
+    ttkStyles.configure("my.TButton", font=(default_font, 12))
+
 sv_ttk.set_theme(darkdetect.theme())
 
-ttkStyles = ttk.Style()
-ttkStyles.configure("my.TButton", font=("SunValleyBodyFont", 13))
+if sys.platform == 'win32':
+    ttkStyles = ttk.Style()
+    ttkStyles.configure("my.TButton", font=("SunValleyBodyFont", 9))
+    apply_theme_to_titlebar(root)
 
 root.mainloop()
