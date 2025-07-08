@@ -2203,7 +2203,6 @@ root.protocol("WM_DELETE_WINDOW", lambda: sys.exit())
 sv_ttk.set_theme(darkdetect.theme())
 
 ttkStyles = ttk.Style()
-ttkStyles.configure("my.TButton", font=("SunValleyBodyFont", 9))
+ttkStyles.configure("my.TButton", font=("SunValleyBodyFont", 13))
 
 root.mainloop()
-
