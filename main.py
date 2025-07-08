@@ -117,7 +117,7 @@ def errorWindow(
     error_message: str = "Generic Error Message",
     title: str = "Error",
     width: int = 300,
-    height: int = 100,
+    height: int = 120,
     **kwargs,
 ):
     """
@@ -127,7 +127,7 @@ def errorWindow(
         error_message (str, optional): Error message to be displayed. Defaults to 'Generic Error Message'.
         title (str, optional): Title of window. Defaults to 'Error'.
         width (int, optional): Width of window. Defaults to 300.
-        height (int, optional): Height of window. Defaults to 100.
+        height (int, optional): Height of window. Defaults to 120.
 
     Keyword Arguments:
         tooltip_text (str, optional): If a string is provided, a tooltip will appear with that string when hovering over the error message.
@@ -156,14 +156,14 @@ def errorWindow(
     )
     errorConfirmButton.pack()
     errorWindow.focus_force()
+    apply_theme_to_titlebar(errorWindow)
     return -1
-
 
 def messageWindow(
     message: str = "Generic Message",
     title: str = "Title",
     width: int = 300,
-    height: int = 100,
+    height: int = 120,
     **kwargs,
 ):
     """
@@ -173,7 +173,7 @@ def messageWindow(
         message (str, optional): Message to be displayed. Defaults to 'Generic Message'.
         title (str, optional): Title of window. Defaults to 'Title'.
         width (int, optional): Width of window. Defaults to 300.
-        height (int, optional): Height of window. Defaults to 100.
+        height (int, optional): Height of window. Defaults to 120.
 
     Keyword Arguments:
         tooltip_text (str, optional): If a string is provided, a tooltip will appear with that string when hovering over the message.
@@ -202,6 +202,7 @@ def messageWindow(
     )
     messageConfirmButton.pack()
     messageWindow.focus_force()
+    apply_theme_to_titlebar(messageWindow)
     return -1
 
 
@@ -254,7 +255,7 @@ def selectHRTFFile():
             + "\n\nRuntime error.\nDoes this file exist on the local drive?",
             title="Error",
             width=300,
-            height=200,
+            height=220,
             tooltip_text=hrtf_file,
         )
         return
@@ -292,7 +293,7 @@ def selectSourceFile():
             + "\n\nRuntime error.\nDoes this file exist on the local drive?",
             title="Error",
             width=300,
-            height=200,
+            height=220,
             tooltip_text=source_file,
         )
         return
@@ -328,15 +329,16 @@ def getHRTFFileData(in_hrtf_file: str, in_HRIR: np.ndarray):
         errorWindow(
             error_message="Selected file only has one dimension (mono channel).\nAre you sure this is an HRTF/HRIR?\nHover for more info.",
             width=400,
-            height=125,
+            height=140,
             tooltip_text="\n".join(map(str, errorHrtfFileData)),
         )
         return -1
     else:
         hrtfFileDataWindow = tk.Toplevel(root)
+        apply_theme_to_titlebar(hrtfFileDataWindow)
         hrtfFileDataWindow.iconphoto(False, icon_photo)
         centered_window(hrtfFileDataWindow)
-        hrtfFileDataWindow.minsize(300, 120)
+        hrtfFileDataWindow.minsize(300, 210)
         hrtfFileDataWindow.title("HRTF File Data")
         windowTitleHRTFData = ttk.Label(
             hrtfFileDataWindow,
@@ -386,9 +388,10 @@ def getSourceFileData(in_source_file: str):
         in_source_file (str): Path to audio file (.wav).
     """
     sourceFileDataWindow = tk.Toplevel(root)
+    apply_theme_to_titlebar(sourceFileDataWindow)
     sourceFileDataWindow.iconphoto(False, icon_photo)
     centered_window(sourceFileDataWindow)
-    sourceFileDataWindow.minsize(300, 120)
+    sourceFileDataWindow.minsize(300, 210)
     sourceFileDataWindow.title("Source File Data")
     windowTitleSourceData = ttk.Label(
         sourceFileDataWindow,
@@ -499,14 +502,15 @@ def stereoToMono(in_sig: np.ndarray):
             message=("New source data dimensions:\n" + str(sig_mono.shape)),
             title="Stereo -> Mono",
             width=350,
-            height=110,
+            height=130,
         )
     else:
         sig_mono = in_sig
         messageWindow(
             message="Source file is already mono.", title="Stereo -> Mono", width=350
         )
-    if getHRTFFileDataButton["state"] == tk.ACTIVE:
+    print(getHRTFFileDataButton["state"])
+    if getHRTFFileDataButton["state"] == tk.ACTIVE or getHRTFFileDataButton["state"] == 'active' or str(getHRTFFileDataButton["state"]) == 'active':
         resampleButton.config(state="active")
 
 
@@ -550,7 +554,7 @@ def fs_resample(s1: np.ndarray, f1: int, s2: np.ndarray, f2: int):
         ),
         title="Resample",
         width=250,
-        height=150,
+        height=170,
     )
 
     timeDomainConvolveButton.config(state="active")
@@ -647,7 +651,7 @@ def selectSOFAFile():
                         + "\n\nOS error.\nDoes this file exist on the local drive?\n\nAlternatively, does this SOFA file\ncontain correct metadata?",
                         title="Error",
                         width=300,
-                        height=250,
+                        height=270,
                         tooltip_text=file,
                     )
                     return
@@ -683,7 +687,7 @@ def selectSOFAFile():
                 + "\n\nOS error.\nDoes this file exist on the local drive?\n\nAlternatively, does this SOFA file\ncontain correct metadata?",
                 title="Error",
                 width=300,
-                height=250,
+                height=270,
                 tooltip_text=sofa_file_path_list[0],
             )
             return
@@ -722,6 +726,7 @@ def getSOFAFileMetadata(in_sofa_file: str):
         in_sofa_file (str): Path to SOFA file.
     """
     sofaMetadataWindow = tk.Toplevel(root)
+    apply_theme_to_titlebar(sofaMetadataWindow)
     sofaMetadataWindow.iconphoto(False, icon_photo)
     centered_window(sofaMetadataWindow)
     sofaMetadataWindow.geometry("400x400")
@@ -756,6 +761,7 @@ def getSOFAFileDimensions(in_sofa_file: str):
         in_sofa_file (str): Path to SOFA file.
     """
     sofaDimensionsWindow = tk.Toplevel(root)
+    apply_theme_to_titlebar(sofaDimensionsWindow)
     sofaDimensionsWindow.iconphoto(False, icon_photo)
     centered_window(sofaDimensionsWindow)
     sofaDimensionsWindow.geometry("600x400")
@@ -1364,7 +1370,7 @@ def exportSOFAConvolved(
             ),
             title="SOFA Rendering",
             width=500,
-            height=150,
+            height=170,
             tooltip_text=str(export_filename),
         )
     if not export_directory:
@@ -1380,6 +1386,7 @@ def spectrogramWindow(audio_file_path: str):
         audio_file_path (str): Path to audio file to be passed to the spectrogram function.
     """
     spectrogramConfigWindow = tk.Toplevel(root)
+    apply_theme_to_titlebar(spectrogramConfigWindow)
     spectrogramConfigWindow.iconphoto(False, icon_photo)
     centered_window(spectrogramConfigWindow)
     spectrogramConfigWindow.grid_columnconfigure(0, weight=1)
@@ -1570,6 +1577,7 @@ def createHelpWindow():
     global tutorialWindow
     global tutorialWindowContentFrame
     tutorialWindow = tk.Toplevel(root)
+    apply_theme_to_titlebar(tutorialWindow)
     tutorialWindow.iconphoto(False, icon_photo)
     tutorialWindow.grid_columnconfigure(0, weight=1)
     tutorialWindow.grid_rowconfigure(0, weight=1)
@@ -1883,20 +1891,23 @@ def generalHelpPage():
 def apply_theme_to_titlebar(
     root,
 ):  # https://github.com/rdbende/Sun-Valley-ttk-theme/tree/main
-    version = sys.getwindowsversion()
+    if sys.platform == 'win32':
+        version = sys.getwindowsversion()
 
-    if version.major == 10 and version.build >= 22000:
-        # Set the title bar color to the background color on Windows 11 for better appearance
-        pywinstyles.change_header_color(
-            root, "#1c1c1c" if sv_ttk.get_theme() == "dark" else "#fafafa"
-        )
-    elif version.major == 10:
-        pywinstyles.change_header_color(
-            root, "dark" if sv_ttk.get_theme() == "dark" else "normal"
-        )
-        # A hacky way to update the title bar's color on Windows 10 (it doesn't update instantly like on Windows 11)
-        root.wm_attributes("-alpha", 0.99)
-        root.wm_attributes("-alpha", 1)
+        if version.major == 10 and version.build >= 22000:
+            # Set the title bar color to the background color on Windows 11 for better appearance
+            pywinstyles.change_header_color(
+                root, "#1c1c1c" if sv_ttk.get_theme() == "dark" else "#fafafa"
+            )
+        elif version.major == 10:
+            pywinstyles.change_header_color(
+                root, "dark" if sv_ttk.get_theme() == "dark" else "normal"
+            )
+            # A hacky way to update the title bar's color on Windows 10 (it doesn't update instantly like on Windows 11)
+            root.wm_attributes("-alpha", 0.99)
+            root.wm_attributes("-alpha", 1)
+    else:
+        return
 
 
 root = tk.Tk()
@@ -2212,6 +2223,6 @@ sv_ttk.set_theme(darkdetect.theme())
 if sys.platform == 'win32':
     ttkStyles = ttk.Style()
     ttkStyles.configure("my.TButton", font=("SunValleyBodyFont", 9))
-    apply_theme_to_titlebar(root)
+    apply_theme_to_titlebar(root) # yes i know this is redundant
 
 root.mainloop()
