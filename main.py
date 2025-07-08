@@ -37,11 +37,17 @@ from base64 import b64decode  # <- decode bitmap image backup for asset
 
 if sys.platform == "win32":
     import pywinstyles # <- aesthetics on dark mode for windows only
+    try:
+        import matplotlib
+        import pyi_splash # <- windows-only splash screen (needed for pyinstaller, bc pyinstaller wipes the matplotlib cache everytime the application closes, and cx_freeze doesn't build to windows with python 3.13)
+        pyi_splash.close()
+        matplotlib.use('TkAgg')
+    except:
+        pass
 
 librosa.cache.clear(warn=False)
 
 source_file = None
-
 
 class ToolTip(
     object

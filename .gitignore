@@ -5,3 +5,4 @@ _pyinstaller
 __pycache__
 _nuitka
 build
+dist
