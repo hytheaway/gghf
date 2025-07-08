@@ -3,4 +3,4 @@
 _pyinstaller
 __pycache__
 _nuitka
-setup.py
+build
