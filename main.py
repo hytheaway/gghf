@@ -9,6 +9,7 @@ import os # <- reading files from disk, adapting to differing os directory path 
 import tempfile # <- adapting to differing os temp file locations
 
 os.environ['LIBROSA_CACHE_DIR'] = str(tempfile.gettempdir()) # <- must be called before importing librosa
+os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = 'hide' # <- gets rid of pygame welcome message, which clutters up cli
 
 import numpy as np # <- matrix calc & more (but mostly matrix calc)
 import matplotlib.pyplot as plt # <- data visualization 
@@ -19,11 +20,14 @@ from scipy import signal # <- fast convolution function
 from scipy.io import wavfile # <- used for spectrogram
 import pygame # <- for playing audio files directly
 import tkinter as tk # <- reliable, if clunky, gui
+from tkinter import ttk # <- necessary so buttons don't turn invisible with dark mode enabled
 from tkinter import filedialog # <- gui file selection from disk
 from tkinter import font # <- ensures fonts are system-compatible
 import webbrowser # <- help page links
+import sv_ttk # <- handles ttk
+import darkdetect # <- detects os light/dark mode
 
-librosa.cache.clear()
+librosa.cache.clear(warn=False)
 
 source_file = None
 class ToolTip(object): #https://stackoverflow.com/questions/20399243/display-message-when-hovering-over-something-with-mouse-cursor-in-python
@@ -43,7 +47,7 @@ class ToolTip(object): #https://stackoverflow.com/questions/20399243/display-mes
         self.tipwindow = tw = tk.Toplevel(self.widget)
         tw.wm_overrideredirect(1)
         tw.wm_geometry("+%d+%d" % (x, y))
-        tooltip_label = tk.Label(tw, text=self.text, justify='left', background='#ffffe0', relief='solid', borderwidth=0, font="TkDefaultFont 8 normal")
+        tooltip_label = tk.Label(tw, text=self.text, justify='left', background='#ffffe0', foreground='black', relief='solid', borderwidth=0, font="TkDefaultFont 10 normal")
         tooltip_label.pack(ipadx=1)
     
     def hide_tooltip(self):
@@ -94,11 +98,11 @@ def errorWindow(error_message:str='Generic Error Message', title:str='Error', wi
     errorWindow.title(str(title))
     errorWindow.geometry(str(width)+'x'+str(height))
     errorWindow.minsize(width, height)
-    errorMessageLabel = tk.Label(errorWindow, text='\nError: ' + str(error_message) + '\n') 
+    errorMessageLabel = ttk.Label(errorWindow, text='\nError: ' + str(error_message) + '\n', justify='center') 
     if tooltip_text:
         create_tooltip(errorMessageLabel, text=str(tooltip_text))
     errorMessageLabel.pack()
-    errorConfirmButton = tk.Button(errorWindow, text='OK', command=lambda:errorWindow.destroy())
+    errorConfirmButton = ttk.Button(errorWindow, text='OK', command=lambda:errorWindow.destroy())
     errorConfirmButton.pack()
     errorWindow.focus_force()
     return -1
@@ -126,11 +130,11 @@ def messageWindow(message:str='Generic Message', title:str='Title', width:int=30
     messageWindow.title(str(title))
     messageWindow.geometry(str(width)+'x'+str(height))
     messageWindow.minsize(width, height)
-    messageLabel = tk.Label(messageWindow, text='\n' + str(message) + '\n')
+    messageLabel = ttk.Label(messageWindow, text='\n' + str(message) + '\n', justify='center')
     if tooltip_text:
         create_tooltip(messageLabel, text=str(tooltip_text))
     messageLabel.pack()
-    messageConfirmButton = tk.Button(messageWindow, text='OK', command=lambda:messageWindow.destroy())
+    messageConfirmButton = ttk.Button(messageWindow, text='OK', command=lambda:messageWindow.destroy())
     messageConfirmButton.pack()
     messageWindow.focus_force()
     return -1
@@ -171,6 +175,7 @@ def selectHRTFFile():
     global HRIR
     global fs_H
     hrtf_file = filedialog.askopenfilename(filetypes=[('.wav files', '.wav')])
+    root.focus_force()
     try:
         if hrtf_file:
             [HRIR,fs_H] = sf.read(hrtf_file)
@@ -180,7 +185,7 @@ def selectHRTFFile():
     else:
         if hrtf_file:
             hrtf_file_print = hrtf_file.split('/')
-            selectHRTFFileLabel.config(text='HRTF file:\n' + shorten_file_name(os.path.basename(hrtf_file), 15))
+            selectHRTFFileLabel.config(text='HRTF file:\n' + shorten_file_name(os.path.basename(hrtf_file), 13))
             create_tooltip(selectHRTFFileLabel, text=str(hrtf_file))
             getHRTFFileDataButton.config(state='active')
             timeDomainVisualHRTFButton.config(state='active')
@@ -196,6 +201,7 @@ def selectSourceFile():
     global sig
     global fs_s
     source_file = filedialog.askopenfilename(filetypes=[('.wav files', '.wav')])
+    root.focus_force()
     # check to see if the selected file is on the drive (in the case of network drives, for example)
     try:
         if source_file:
@@ -207,7 +213,7 @@ def selectSourceFile():
         if source_file == '':
             return
         source_file_print = source_file.split('/')
-        selectSourceFileLabel.config(text='Source file:\n' + shorten_file_name(os.path.basename(source_file), 15))
+        selectSourceFileLabel.config(text='Source file:\n' + shorten_file_name(os.path.basename(source_file), 13))
         create_tooltip(selectSourceFileLabel, text=str(source_file))
         getSourceFileDataButton.config(state='active')
         stereoToMonoButton.config(state='active')
@@ -222,25 +228,30 @@ def getHRTFFileData(in_hrtf_file:str, in_HRIR:np.ndarray):
     Args:
         in_hrtf_file (str): Path to HRTF file (.wav).
         in_HRIR (np.ndarray): HRIR object pulled from in_hrtf_file.
-    """    
-    hrtfFileDataWindow = tk.Toplevel(root)
-    hrtfFileDataWindow.iconphoto(False, icon_photo)
-    centered_window(hrtfFileDataWindow)
-    hrtfFileDataWindow.minsize(300, 120)
-    hrtfFileDataWindow.title('HRTF File Data')
-    windowTitleHRTFData = tk.Label(hrtfFileDataWindow, text='\n' + os.path.basename(in_hrtf_file) + '\n')
-    windowTitleHRTFData.pack()
-    create_tooltip(windowTitleHRTFData, in_hrtf_file)
-    hrtfSampleRateLabel = tk.Label(hrtfFileDataWindow, text='Sample rate: ' + str(fs_H))
-    hrtfSampleRateLabel.pack()
-    hrtfDataDimLabel = tk.Label(hrtfFileDataWindow, text='Data dimensions: ' + str(in_HRIR.shape))
-    hrtfDataDimLabel.pack()
-    hrtfPlayFileButton = tk.Button(hrtfFileDataWindow, text='Play HRTF', command=lambda:playAudio(in_hrtf_file))
-    hrtfPlayFileButton.pack()
-    hrtfPauseFileButton = tk.Button(hrtfFileDataWindow, text='Pause HRTF', command=lambda:pygame.mixer.music.pause())
-    hrtfPauseFileButton.pack()
-    hrtfFileDataCloseWindowButton = tk.Button(hrtfFileDataWindow, text='Close', command=lambda:hrtfFileDataWindow.destroy())
-    hrtfFileDataCloseWindowButton.pack()
+    """
+    if len(in_HRIR.shape) < 2:
+        errorHrtfFileData = [str('Selected file: ' + os.path.basename(in_hrtf_file)), str('Sample rate: ' + str(fs_H)), str('Data dimensions: ' + str(in_HRIR.shape))]
+        errorWindow(error_message='Selected file only has one dimension (mono channel).\nAre you sure this is an HRTF/HRIR?\nHover for more info.', width=400, height=125, tooltip_text='\n'.join(map(str, errorHrtfFileData)))
+        return -1
+    else:
+        hrtfFileDataWindow = tk.Toplevel(root)
+        hrtfFileDataWindow.iconphoto(False, icon_photo)
+        centered_window(hrtfFileDataWindow)
+        hrtfFileDataWindow.minsize(300, 120)
+        hrtfFileDataWindow.title('HRTF File Data')
+        windowTitleHRTFData = ttk.Label(hrtfFileDataWindow, text='\n' + os.path.basename(in_hrtf_file) + '\n', justify='center')
+        windowTitleHRTFData.pack()
+        create_tooltip(windowTitleHRTFData, in_hrtf_file)
+        hrtfSampleRateLabel = ttk.Label(hrtfFileDataWindow, text='Sample rate: ' + str(fs_H), justify='center')
+        hrtfSampleRateLabel.pack()
+        hrtfDataDimLabel = ttk.Label(hrtfFileDataWindow, text='Data dimensions: ' + str(in_HRIR.shape) + '\n', justify='center')
+        hrtfDataDimLabel.pack()
+        hrtfPlayFileButton = ttk.Button(hrtfFileDataWindow, text='Play HRTF', command=lambda:playAudio(in_hrtf_file))
+        hrtfPlayFileButton.pack()
+        hrtfPauseFileButton = ttk.Button(hrtfFileDataWindow, text='Pause HRTF', command=lambda:pygame.mixer.music.pause())
+        hrtfPauseFileButton.pack()
+        hrtfFileDataCloseWindowButton = ttk.Button(hrtfFileDataWindow, text='Close', command=lambda:stopAudioAndCloseWindow(hrtfFileDataWindow))
+        hrtfFileDataCloseWindowButton.pack()
 
 def getSourceFileData(in_source_file:str):
     """
@@ -254,19 +265,28 @@ def getSourceFileData(in_source_file:str):
     centered_window(sourceFileDataWindow)
     sourceFileDataWindow.minsize(300, 120)
     sourceFileDataWindow.title('Source File Data')
-    windowTitleSourceData = tk.Label(sourceFileDataWindow, text='\n' + os.path.basename(in_source_file) + '\n')
+    windowTitleSourceData = ttk.Label(sourceFileDataWindow, text='\n' + os.path.basename(in_source_file) + '\n', justify='center')
     windowTitleSourceData.pack()
     create_tooltip(windowTitleSourceData, in_source_file)
-    sourceSampleRateLabel = tk.Label(sourceFileDataWindow, text='Sample rate: ' + str(fs_s))
+    sourceSampleRateLabel = ttk.Label(sourceFileDataWindow, text='Sample rate: ' + str(fs_s), justify='center')
     sourceSampleRateLabel.pack()
-    sourceDataDimLabel = tk.Label(sourceFileDataWindow, text='Data dimensions: ' + str(sig.shape))
+    sourceDataDimLabel = ttk.Label(sourceFileDataWindow, text='Data dimensions: ' + str(sig.shape) + '\n', justify='center')
     sourceDataDimLabel.pack()
-    sourcePlayFileButton = tk.Button(sourceFileDataWindow, text='Play Source File', command=lambda:playAudio(in_source_file))
+    sourcePlayFileButton = ttk.Button(sourceFileDataWindow, text='Play Source File', command=lambda:playAudio(in_source_file))
     sourcePlayFileButton.pack()
-    sourcePauseFileButton = tk.Button(sourceFileDataWindow, text='Pause Source File', command=lambda:pygame.mixer.music.pause())
+    sourcePauseFileButton = ttk.Button(sourceFileDataWindow, text='Pause Source File', command=lambda:pygame.mixer.music.pause())
     sourcePauseFileButton.pack()
-    sourceFileDataCloseWindowButton = tk.Button(sourceFileDataWindow, text='Close', command=lambda:sourceFileDataWindow.destroy())
+    sourceFileDataCloseWindowButton = ttk.Button(sourceFileDataWindow, text='Close', command=lambda:(stopAudioAndCloseWindow(sourceFileDataWindow)))
     sourceFileDataCloseWindowButton.pack()
+
+def stopAudioAndCloseWindow(window_to_close):
+    # cannot believe i'm actually making this function
+    try:
+        pygame.mixer.music.pause()
+    except pygame.error:
+        pass
+    finally:
+        window_to_close.destroy()
 
 def timeDomainVisualHRTF(in_hrtf_file:str, in_HRIR:np.ndarray):
     """
@@ -413,6 +433,7 @@ def selectSOFAFile():
     global sofa_mode_selection
     
     sofa_file_path_list = filedialog.askopenfilenames(filetypes=[('.SOFA files', '.sofa')])
+    root.focus_force()
     if len(sofa_file_path_list) > 1:
         sofa_mode_selection = 1
         for file in sofa_file_path_list:
@@ -424,7 +445,7 @@ def selectSOFAFile():
                     return
                 else:
                     continue
-        selectSOFAFileLabel.config(text='SOFA file:\nHover to see SOFA files.')
+        selectSOFAFileLabel.config(text='SOFA file:\nHover to see selected files.')
         create_tooltip(selectSOFAFileLabel, ('NOTE: Graph viewing only - Rendering disabled when multiple SOFA files are selected.\n' + '\n'.join(map(str, sofa_file_path_list))))
         getSOFAFileMetadataButton.config(state='disabled')
         getSOFAFileDimensionsButton.config(state='disabled')
@@ -918,27 +939,27 @@ def spectrogramWindow(audio_file_path:str):
     centered_window(spectrogramConfigWindow)
     spectrogramConfigWindow.grid_columnconfigure(0, weight=1)
     spectrogramConfigWindow.grid_rowconfigure(0, weight=1)
-    spectrogramConfigWindow.minsize(550, 250)
+    spectrogramConfigWindow.minsize(570, 250)
     spectrogramConfigWindow.title('Configure Spectrogram')
     spectrogramConfigWindowContentFrame = tk.Frame(spectrogramConfigWindow, borderwidth=10, relief='flat')
     spectrogramConfigWindowContentFrame.grid(row=0, column=0)
 
-    spectrogramConfigTitleLabel = tk.Label(spectrogramConfigWindowContentFrame, text='Configure Spectrogram', font=("TkDefaultFont", str(parse_font_dict['size'] + 2), "bold"))
+    spectrogramConfigTitleLabel = ttk.Label(spectrogramConfigWindowContentFrame, text='Configure Spectrogram', font=("TkDefaultFont", str(parse_font_dict['size'] + 2), "bold"))
     spectrogramConfigTitleLabel.grid(row=0, column=1)
-    spectrogramAudioTitleLabel = tk.Label(spectrogramConfigWindowContentFrame, text='Audio file:')
+    spectrogramAudioTitleLabel = ttk.Label(spectrogramConfigWindowContentFrame, text='Audio file:')
     spectrogramAudioTitleLabel.grid(row=1, column=0)
-    spectrogramSelectedAudioLabel = tk.Label(spectrogramConfigWindowContentFrame, text=shorten_file_name(os.path.basename(audio_file_path), 24))
+    spectrogramSelectedAudioLabel = ttk.Label(spectrogramConfigWindowContentFrame, text=shorten_file_name(os.path.basename(audio_file_path), 24))
     create_tooltip(spectrogramSelectedAudioLabel, text=str(audio_file_path))
     spectrogramSelectedAudioLabel.grid(row=1, column=2)
-    startTimeAudioLabel = tk.Label(spectrogramConfigWindowContentFrame, text='Start time (ms):')
+    startTimeAudioLabel = ttk.Label(spectrogramConfigWindowContentFrame, text='Start time (ms):')
     startTimeAudioLabel.grid(row=2, column=0)
-    endTimeAudioLabel = tk.Label(spectrogramConfigWindowContentFrame, text='End time (ms):')
+    endTimeAudioLabel = ttk.Label(spectrogramConfigWindowContentFrame, text='End time (ms):')
     endTimeAudioLabel.grid(row=3, column=0)
-    dynamicRangeMinLabel = tk.Label(spectrogramConfigWindowContentFrame, text='Intensity scale min (dB):')
+    dynamicRangeMinLabel = ttk.Label(spectrogramConfigWindowContentFrame, text='Intensity scale min (dB):')
     dynamicRangeMinLabel.grid(row=4, column=0)
-    dynamicRangeMaxLabel = tk.Label(spectrogramConfigWindowContentFrame, text='Intensity scale max (dB):')
+    dynamicRangeMaxLabel = ttk.Label(spectrogramConfigWindowContentFrame, text='Intensity scale max (dB):')
     dynamicRangeMaxLabel.grid(row=5, column=0)
-    plotTitleLabel = tk.Label(spectrogramConfigWindowContentFrame, text='Plot title:')
+    plotTitleLabel = ttk.Label(spectrogramConfigWindowContentFrame, text='Plot title:')
     plotTitleLabel.grid(row=6, column=0)
 
     startTimeStringVar = tk.StringVar()
@@ -947,18 +968,18 @@ def spectrogramWindow(audio_file_path:str):
     dynamicRangeMaxStringVar = tk.StringVar()
     plotTitleStringVar = tk.StringVar()
 
-    startTimeAudioEntry = tk.Entry(spectrogramConfigWindowContentFrame, textvariable=startTimeStringVar)
+    startTimeAudioEntry = ttk.Entry(spectrogramConfigWindowContentFrame, textvariable=startTimeStringVar)
     startTimeAudioEntry.grid(row=2, column=2)
-    endTimeAudioEntry = tk.Entry(spectrogramConfigWindowContentFrame, textvariable=endTimeStringVar)
+    endTimeAudioEntry = ttk.Entry(spectrogramConfigWindowContentFrame, textvariable=endTimeStringVar)
     endTimeAudioEntry.grid(row=3, column=2)
-    dynamicRangeMinEntry = tk.Entry(spectrogramConfigWindowContentFrame, textvariable=dynamicRangeMinStringVar)
+    dynamicRangeMinEntry = ttk.Entry(spectrogramConfigWindowContentFrame, textvariable=dynamicRangeMinStringVar)
     dynamicRangeMinEntry.grid(row=4, column=2)
-    dynamicRangeMaxEntry = tk.Entry(spectrogramConfigWindowContentFrame, textvariable=dynamicRangeMaxStringVar)
+    dynamicRangeMaxEntry = ttk.Entry(spectrogramConfigWindowContentFrame, textvariable=dynamicRangeMaxStringVar)
     dynamicRangeMaxEntry.grid(row=5, column=2)
-    plotTitleEntry = tk.Entry(spectrogramConfigWindowContentFrame, textvariable=plotTitleStringVar)
+    plotTitleEntry = ttk.Entry(spectrogramConfigWindowContentFrame, textvariable=plotTitleStringVar)
     plotTitleEntry.grid(row=6, column=2)
 
-    viewSpectrogramButton = tk.Button(spectrogramConfigWindowContentFrame, text='View spectrogram', command=lambda:spectrogram(audio_file_path, startTimeStringVar.get(), endTimeStringVar.get(), dynamicRangeMinStringVar.get(), dynamicRangeMaxStringVar.get(), plotTitleStringVar.get()))
+    viewSpectrogramButton = ttk.Button(spectrogramConfigWindowContentFrame, text='View spectrogram', command=lambda:spectrogram(audio_file_path, startTimeStringVar.get(), endTimeStringVar.get(), dynamicRangeMinStringVar.get(), dynamicRangeMaxStringVar.get(), plotTitleStringVar.get()))
     viewSpectrogramButton.grid(row=7, column=1)
 
 def spectrogram(audio_file_path:str, start_ms:str, end_ms:str, dynamic_range_min:str, dynamic_range_max:str, plot_title:str):
@@ -1068,7 +1089,7 @@ def hrtfHelpPage():
     exportConvolvedTutorialLabel = tk.Label(tutorialWindowContentFrame, text='"Export Convolved"\nExports the time domain convolved file loaded in memory.\nFile naming convention is:\n[Source File Name]-[HRTF File Name]-export.wav\n')
     exportConvolvedTutorialLabel.grid(row=7, column=1)
     
-    nextButton = tk.Button(tutorialWindowContentFrame, text='Next (SOFA Help) ->', command=lambda:sofaHelpPage())
+    nextButton = ttk.Button(tutorialWindowContentFrame, text='Next (SOFA Help) ->', command=lambda:sofaHelpPage())
     nextButton.grid(row=8, column=2, sticky='E')
 
 def sofaHelpPage():
@@ -1103,10 +1124,10 @@ def sofaHelpPage():
     renderSOFATutorialLabel = tk.Label(tutorialWindowContentFrame, text='"Render Source with SOFA File"\nConvolves the source file with\nthe desired values in the .SOFA file.\nDisabled if multiple .SOFA files are selected.\n')
     renderSOFATutorialLabel.grid(row=7, column=1)
     
-    prevButton = tk.Button(tutorialWindowContentFrame, text='<- Previous (HRTF Help)', command=lambda:hrtfHelpPage())
+    prevButton = ttk.Button(tutorialWindowContentFrame, text='<- Previous (HRTF Help)', command=lambda:hrtfHelpPage())
     prevButton.grid(row=8, column=0, sticky='W')
     
-    nextButton = tk.Button(tutorialWindowContentFrame, text='Next (General Help) ->', command=lambda:generalHelpPage())
+    nextButton = ttk.Button(tutorialWindowContentFrame, text='Next (General Help) ->', command=lambda:generalHelpPage())
     nextButton.grid(row=8, column=2, sticky='E')
 
 def generalHelpPage():
@@ -1178,7 +1199,7 @@ def generalHelpPage():
     feedbackDesc3TutorialLabel.grid(row=6, column=2)
     feedbackDesc3TutorialLabel.bind("<Button-1>", lambda e: callback_url("mailto:hytheaway@gmail.com"))
     
-    prevButton = tk.Button(tutorialWindowContentFrame, text='<- Previous (SOFA Help)', command=lambda:sofaHelpPage())
+    prevButton = ttk.Button(tutorialWindowContentFrame, text='<- Previous (SOFA Help)', command=lambda:sofaHelpPage())
     prevButton.grid(row=20, column=0, sticky='W')
 
 root = tk.Tk()
@@ -1199,7 +1220,7 @@ icon_label.place(x=0, y=0, width=120, height=120, relwidth=0.5, relheight=0.5)
 rootFrame = tk.Frame(root, borderwidth=10, relief='flat')
 rootFrame.grid(row=0, column=0)
 
-titleLabel = tk.Label(rootFrame, text="Garrett's Great\nHRTF Functions\n", font=("TkDefaultFont", str(parse_font_dict['size'] + 2), "bold"))
+titleLabel = ttk.Label(rootFrame, text="Garrett's Great\nHRTF Functions\n", justify='center', font=("TkDefaultFont", str(parse_font_dict['size'] + 2), "bold"))
 titleLabel.grid(row=0, column=0, columnspan=3)
 
 topSectionFrame = tk.Frame(rootFrame, borderwidth=10, relief='ridge')
@@ -1211,52 +1232,52 @@ hrtfSourceSelectionFrame.grid(row=0, column=0, columnspan=3)
 hrtfFrame = tk.Frame(hrtfSourceSelectionFrame, borderwidth=10, relief='flat')
 hrtfFrame.grid(row=0, column=0)
 
-selectHRTFFileButton = tk.Button(hrtfFrame, text='Select HRTF File (.wav)', command=lambda:selectHRTFFile())
+selectHRTFFileButton = ttk.Button(hrtfFrame, text='Select HRTF File (.wav)', command=lambda:selectHRTFFile())
 selectHRTFFileButton.grid(row=0, column=0)
-selectHRTFFileLabel = tk.Label(hrtfFrame, text='HRTF file:\n', wraplength=120)
+selectHRTFFileLabel = ttk.Label(hrtfFrame, text='HRTF file:\n', justify='center', wraplength=120)
 selectHRTFFileLabel.grid(row=1, column=0)
-getHRTFFileDataButton = tk.Button(hrtfFrame, text='Get HRTF File Data', state='disabled', command=lambda:getHRTFFileData(hrtf_file, HRIR))
+getHRTFFileDataButton = ttk.Button(hrtfFrame, text='Get HRTF File Data', state='disabled', command=lambda:getHRTFFileData(hrtf_file, HRIR))
 getHRTFFileDataButton.grid(row=3, column=0)
-timeDomainVisualHRTFButton = tk.Button(hrtfFrame, text='HRTF Time Domain Visualization', state='disabled', command=lambda:timeDomainVisualHRTF(hrtf_file, HRIR))
+timeDomainVisualHRTFButton = ttk.Button(hrtfFrame, text='HRTF Time Domain Visualization', state='disabled', command=lambda:timeDomainVisualHRTF(hrtf_file, HRIR))
 timeDomainVisualHRTFButton.grid(row=4, column=0)
-freqDomainVisualHRTFButton = tk.Button(hrtfFrame, text='HRTF Frequency Domain Visualization', state='disabled', command=lambda:freqDomainVisualHRTF(hrtf_file))
+freqDomainVisualHRTFButton = ttk.Button(hrtfFrame, text='HRTF Frequency Domain Visualization', state='disabled', command=lambda:freqDomainVisualHRTF(hrtf_file))
 freqDomainVisualHRTFButton.grid(row=5, column=0)
 
 sourceFrame = tk.Frame(hrtfSourceSelectionFrame, borderwidth=10, relief='flat')
 sourceFrame.grid(row=0, column=2)
-selectSourceFileButton = tk.Button(sourceFrame, text='Select source file (.wav)', command=lambda:selectSourceFile())
-selectSourceFileLabel = tk.Label(sourceFrame, text='Source file:\n', wraplength=120)
+selectSourceFileButton = ttk.Button(sourceFrame, text='Select source file (.wav)', command=lambda:selectSourceFile())
+selectSourceFileLabel = ttk.Label(sourceFrame, text='Source file:\n', justify='center', wraplength=120)
 selectSourceFileButton.grid(row=0, column=2)
 selectSourceFileLabel.grid(row=1, column=2)
-getSourceFileDataButton = tk.Button(sourceFrame, text='Get Source File Data', state='disabled', command=lambda:getSourceFileData(source_file))
+getSourceFileDataButton = ttk.Button(sourceFrame, text='Get Source File Data', state='disabled', command=lambda:getSourceFileData(source_file))
 getSourceFileDataButton.grid(row=2, column=2)
-spectrogramButton = tk.Button(sourceFrame, text='View Spectrogram', state='disabled', command=lambda:spectrogramWindow(source_file))
+spectrogramButton = ttk.Button(sourceFrame, text='View Spectrogram', state='disabled', command=lambda:spectrogramWindow(source_file))
 spectrogramButton.grid(row=3, column=2)
-stereoToMonoButton = tk.Button(sourceFrame, text='Source File Stereo -> Mono', state='disabled', command=lambda:stereoToMono(sig))
+stereoToMonoButton = ttk.Button(sourceFrame, text='Source File Stereo -> Mono', state='disabled', command=lambda:stereoToMono(sig))
 stereoToMonoButton.grid(row=4, column=2)
 
 hrtfOperationsFrame = tk.Frame(topSectionFrame, borderwidth=10, relief='flat')
 hrtfOperationsFrame.grid(row=1, column=1)
 
-resampleButton = tk.Button(hrtfOperationsFrame, text='Resample', state='disabled', command=lambda:fs_resample(sig_mono, fs_s, HRIR, fs_H))
+resampleButton = ttk.Button(hrtfOperationsFrame, text='Resample', state='disabled', command=lambda:fs_resample(sig_mono, fs_s, HRIR, fs_H))
 resampleButton.grid(row=1, column=1)
-timeDomainConvolveButton = tk.Button(hrtfOperationsFrame, text='Time Domain Convolve', state='disabled', command=lambda:timeDomainConvolve(sig_mono, HRIR))
+timeDomainConvolveButton = ttk.Button(hrtfOperationsFrame, text='Time Domain Convolve', state='disabled', command=lambda:timeDomainConvolve(sig_mono, HRIR))
 timeDomainConvolveButton.grid(row=2, column=1)
-exportConvolvedButton = tk.Button(hrtfOperationsFrame, text='Export Convolved', state='disabled', command=lambda:exportConvolved(Bin_Mix, fs_s, source_file, hrtf_file))
+exportConvolvedButton = ttk.Button(hrtfOperationsFrame, text='Export Convolved', state='disabled', command=lambda:exportConvolved(Bin_Mix, fs_s, source_file, hrtf_file))
 exportConvolvedButton.grid(row=3, column=1)
 
-sectionalLabel = tk.Label(rootFrame, text='\n')
+sectionalLabel = ttk.Label(rootFrame, text='\n')
 sectionalLabel.grid(row=2, column=0, columnspan=3)
 
-sofaLabel = tk.Label(rootFrame, text="Garrett's Great\nSOFA Functions\n", font=("TkDefaultFont", str(parse_font_dict['size'] + 2), "bold"))
+sofaLabel = ttk.Label(rootFrame, text="Garrett's Great\nSOFA Functions\n", justify='center', font=("TkDefaultFont", str(parse_font_dict['size'] + 2), "bold"))
 sofaLabel.grid(row=3, column=0, columnspan=3)
 
 bottomSectionFrame = tk.Frame(rootFrame, borderwidth=10, relief='ridge')
 bottomSectionFrame.grid(row=4, column=0, columnspan=3)
 
-selectSOFAFileButton = tk.Button(bottomSectionFrame, text='Select SOFA File', command=lambda:selectSOFAFile())
+selectSOFAFileButton = ttk.Button(bottomSectionFrame, text='Select SOFA File', command=lambda:selectSOFAFile())
 selectSOFAFileButton.grid(row=0, column=0, columnspan=3)
-selectSOFAFileLabel = tk.Label(bottomSectionFrame, text='SOFA file:\n', wraplength=240)
+selectSOFAFileLabel = ttk.Label(bottomSectionFrame, text='SOFA file:\n', justify='center', wraplength=240)
 selectSOFAFileLabel.grid(row=1, column=0, columnspan=3)
 
 sofaMeasurementStringVar = tk.StringVar()
@@ -1271,54 +1292,56 @@ bottomLeftFrame.grid(row=2, column=0)
 bottomRightFrame = tk.Frame(bottomSectionFrame, borderwidth=10, relief='flat')
 bottomRightFrame.grid(row=2, column=2)
 
-getSOFAFileMetadataButton = tk.Button(bottomLeftFrame, text='Get SOFA File Metadata', state='disabled', command=lambda:getSOFAFileMetadata(sofa_file_path_list[0]))
+getSOFAFileMetadataButton = ttk.Button(bottomLeftFrame, text='Get SOFA File Metadata', state='disabled', command=lambda:getSOFAFileMetadata(sofa_file_path_list[0]))
 getSOFAFileMetadataButton.grid(row=0, column=0)
-getSOFAFileDimensionsButton = tk.Button(bottomRightFrame, text='Get SOFA File Dimensions', state='disabled', command=lambda:getSOFAFileDimensions(sofa_file_path_list[0]))
+getSOFAFileDimensionsButton = ttk.Button(bottomRightFrame, text='Get SOFA File Dimensions', state='disabled', command=lambda:getSOFAFileDimensions(sofa_file_path_list[0]))
 getSOFAFileDimensionsButton.grid(row=0, column=0)
 
-sofaMeasurementTextBox = tk.Entry(bottomLeftFrame, state='disabled', width=5, textvariable=sofaMeasurementStringVar)
+sofaMeasurementTextBox = ttk.Entry(bottomLeftFrame, state='disabled', width=5, textvariable=sofaMeasurementStringVar)
 sofaMeasurementTextBox.grid(row=1, column=0)
-sofaMeasurementLabel = tk.Label(bottomLeftFrame, text='Measurement Index\n(default: 0)\n')
+sofaMeasurementLabel = ttk.Label(bottomLeftFrame, text='Measurement Index\n(default: 0)\n', justify='center')
 sofaMeasurementLabel.grid(row=2, column=0)
-sofaEmitterTextBox = tk.Entry(bottomRightFrame, state='disabled', width=5, textvariable=sofaEmitterStringVar)
+sofaEmitterTextBox = ttk.Entry(bottomRightFrame, state='disabled', width=5, textvariable=sofaEmitterStringVar)
 sofaEmitterTextBox.grid(row=1, column=0)
-sofaEmitterLabel = tk.Label(bottomRightFrame, text='Emitter\n(default: 1)\n')
+sofaEmitterLabel = ttk.Label(bottomRightFrame, text='Emitter\n(default: 1)\n', justify='center')
 sofaEmitterLabel.grid(row=2, column=0)
 
-frequencyXLimTextBox = tk.Entry(bottomLeftFrame, state='disabled', width=15, textvariable=freqXLimStringVar)
+frequencyXLimTextBox = ttk.Entry(bottomLeftFrame, state='disabled', width=15, textvariable=freqXLimStringVar)
 frequencyXLimTextBox.grid(row=3, column=0)
-frequencyXLimLabel = tk.Label(bottomLeftFrame, text='Frequency Range (Hz)\n[start, end]')
+frequencyXLimLabel = ttk.Label(bottomLeftFrame, text='Frequency Range (Hz)\n[start, end]', justify='center')
 frequencyXLimLabel.grid(row=4, column=0)
-magnitudeYLimTextBox = tk.Entry(bottomRightFrame, state='disabled', width=15, textvariable=magYLimStringVar)
+magnitudeYLimTextBox = ttk.Entry(bottomRightFrame, state='disabled', width=15, textvariable=magYLimStringVar)
 magnitudeYLimTextBox.grid(row=3, column=0)
-magnitudeYLimLabel = tk.Label(bottomRightFrame, text='Magnitude (dB)\n[start, end]')
+magnitudeYLimLabel = ttk.Label(bottomRightFrame, text='Magnitude (dB)\n[start, end]', justify='center')
 magnitudeYLimLabel.grid(row=4, column=0)
 
-azimuthTextBox = tk.Entry(bottomLeftFrame, state='disabled', width=5, textvariable=azimuthStringVar)
+azimuthTextBox = ttk.Entry(bottomLeftFrame, state='disabled', width=5, textvariable=azimuthStringVar)
 azimuthTextBox.grid(row=5, column=0)
-azimuthLabel = tk.Label(bottomLeftFrame, text='Desired azimuth (in deg)')
+azimuthLabel = ttk.Label(bottomLeftFrame, text='Desired azimuth (in deg)', justify='center')
 azimuthLabel.grid(row=6, column=0)
-elevationTextBox = tk.Entry(bottomRightFrame, state='disabled', width=5, textvariable=elevationStringVar)
+elevationTextBox = ttk.Entry(bottomRightFrame, state='disabled', width=5, textvariable=elevationStringVar)
 elevationTextBox.grid(row=5, column=0)
-elevationLabel = tk.Label(bottomRightFrame, text='Desired elevation (in deg)')
+elevationLabel = ttk.Label(bottomRightFrame, text='Desired elevation (in deg)', justify='center')
 elevationLabel.grid(row=6, column=0)
 
-sofaViewButton = tk.Button(bottomSectionFrame, text='View SOFA File', state='disabled', command=lambda:viewSOFAGraphs(sofa_file_path_list, freqXLimStringVar.get(), magYLimStringVar.get(), sofaMeasurementStringVar.get(), sofaEmitterStringVar.get()))
+sofaViewButton = ttk.Button(bottomSectionFrame, text='View SOFA File', state='disabled', command=lambda:viewSOFAGraphs(sofa_file_path_list, freqXLimStringVar.get(), magYLimStringVar.get(), sofaMeasurementStringVar.get(), sofaEmitterStringVar.get()))
 sofaViewButton.grid(row=4, column=0, columnspan=2)
-sofaSaveButton = tk.Button(bottomSectionFrame, text='Save all SOFA graphs', state='disabled', command=lambda:saveSOFAGraphs(sofa_file_path_list, freqXLimStringVar.get(), magYLimStringVar.get(), sofaMeasurementStringVar.get(), sofaEmitterStringVar.get()))
+sofaSaveButton = ttk.Button(bottomSectionFrame, text='Save all SOFA graphs', state='disabled', command=lambda:saveSOFAGraphs(sofa_file_path_list, freqXLimStringVar.get(), magYLimStringVar.get(), sofaMeasurementStringVar.get(), sofaEmitterStringVar.get()))
 sofaSaveButton.grid(row=4, column=1, columnspan=2)
-sofaRenderButton = tk.Button(bottomSectionFrame, text='Render Source with SOFA file', state='disabled', command=lambda:renderWithSOFA(azimuthStringVar.get(), elevationStringVar.get(), source_file, sofa_file_path_list[0]))
+sofaRenderButton = ttk.Button(bottomSectionFrame, text='Render Source with SOFA file', state='disabled', command=lambda:renderWithSOFA(azimuthStringVar.get(), elevationStringVar.get(), source_file, sofa_file_path_list[0]))
 sofaRenderButton.grid(row=5, column=0, columnspan=3)
 
-tutorialButton = tk.Button(rootFrame, text='Help', command=lambda:createHelpWindow())
+tutorialButton = ttk.Button(rootFrame, text='Help', command=lambda:createHelpWindow())
 tutorialButton.grid(row=6, column=0, sticky='W')
 
-quitButton = tk.Button(rootFrame, text='Quit', command=lambda:quit())
+quitButton = ttk.Button(rootFrame, text='Quit', command=lambda:quit())
 quitButton.grid(row=6, column=2, sticky='E')
 
 # prevents the window from appearing at the bottom of the stack
 root.focus_force()
 
 root.protocol('WM_DELETE_WINDOW', lambda:quit())
+
+sv_ttk.set_theme(darkdetect.theme())
 
 root.mainloop()
