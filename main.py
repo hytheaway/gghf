@@ -5,7 +5,7 @@
 # also please keep in mind that this isn't supposed to be "efficient" or "clean" or "lightweight".
 # this is meant to be the most brute force way to do all my hrtf processing in one file with one interface.
 
-import sys
+import sys # <- replacement for pythonic quit(), which doesn't play nicely with cx_freeze
 import os  # <- reading files from disk, adapting to differing os directory path conventions
 import tempfile  # <- adapting to differing os temp file locations
 
@@ -33,12 +33,12 @@ from tkinter import font  # <- ensures fonts are system-compatible
 import webbrowser  # <- help page links
 import sv_ttk  # <- handles ttk
 import darkdetect  # <- detects os light/dark mode
-from base64 import b64decode
+from base64 import b64decode # <- decode bitmap image backup for asset
+import pywinstyles
 
 librosa.cache.clear(warn=False)
 
 source_file = None
-
 
 class ToolTip(
     object
@@ -140,7 +140,7 @@ def errorWindow(
         create_tooltip(errorMessageLabel, text=str(tooltip_text))
     errorMessageLabel.pack()
     errorConfirmButton = ttk.Button(
-        errorWindow, text="OK", command=lambda: errorWindow.destroy()
+        errorWindow, text="OK", style='my.TButton', command=lambda: errorWindow.destroy()
     )
     errorConfirmButton.pack()
     errorWindow.focus_force()
@@ -183,7 +183,7 @@ def messageWindow(
         create_tooltip(messageLabel, text=str(tooltip_text))
     messageLabel.pack()
     messageConfirmButton = ttk.Button(
-        messageWindow, text="OK", command=lambda: messageWindow.destroy()
+        messageWindow, text="OK", style='my.TButton', command=lambda: messageWindow.destroy()
     )
     messageConfirmButton.pack()
     messageWindow.focus_force()
@@ -343,18 +343,21 @@ def getHRTFFileData(in_hrtf_file: str, in_HRIR: np.ndarray):
         hrtfPlayFileButton = ttk.Button(
             hrtfFileDataWindow,
             text="Play HRTF",
+            style='my.TButton',
             command=lambda: playAudio(in_hrtf_file),
         )
         hrtfPlayFileButton.pack()
         hrtfPauseFileButton = ttk.Button(
             hrtfFileDataWindow,
             text="Pause HRTF",
+            style='my.TButton',
             command=lambda: pygame.mixer.music.pause(),
         )
         hrtfPauseFileButton.pack()
         hrtfFileDataCloseWindowButton = ttk.Button(
             hrtfFileDataWindow,
             text="Close",
+            style='my.TButton',
             command=lambda: stopAudioAndCloseWindow(hrtfFileDataWindow),
         )
         hrtfFileDataCloseWindowButton.pack()
@@ -392,18 +395,21 @@ def getSourceFileData(in_source_file: str):
     sourcePlayFileButton = ttk.Button(
         sourceFileDataWindow,
         text="Play Source File",
+        style='my.TButton',
         command=lambda: playAudio(in_source_file),
     )
     sourcePlayFileButton.pack()
     sourcePauseFileButton = ttk.Button(
         sourceFileDataWindow,
         text="Pause Source File",
+        style='my.TButton',
         command=lambda: pygame.mixer.music.pause(),
     )
     sourcePauseFileButton.pack()
     sourceFileDataCloseWindowButton = ttk.Button(
         sourceFileDataWindow,
         text="Close",
+        style='my.TButton',
         command=lambda: (stopAudioAndCloseWindow(sourceFileDataWindow)),
     )
     sourceFileDataCloseWindowButton.pack()
@@ -1435,6 +1441,7 @@ def spectrogramWindow(audio_file_path: str):
     viewSpectrogramButton = ttk.Button(
         spectrogramConfigWindowContentFrame,
         text="View spectrogram",
+        style='my.TButton',
         command=lambda: spectrogram(
             audio_file_path,
             startTimeStringVar.get(),
@@ -1629,6 +1636,7 @@ def hrtfHelpPage():
     nextButton = ttk.Button(
         tutorialWindowContentFrame,
         text="Next (SOFA Help) ->",
+        style='my.TButton',
         command=lambda: sofaHelpPage(),
     )
     nextButton.grid(row=8, column=2, sticky="E")
@@ -1709,6 +1717,7 @@ def sofaHelpPage():
     prevButton = ttk.Button(
         tutorialWindowContentFrame,
         text="<- Previous (HRTF Help)",
+        style='my.TButton',
         command=lambda: hrtfHelpPage(),
     )
     prevButton.grid(row=8, column=0, sticky="W")
@@ -1716,6 +1725,7 @@ def sofaHelpPage():
     nextButton = ttk.Button(
         tutorialWindowContentFrame,
         text="Next (General Help) ->",
+        style='my.TButton',
         command=lambda: generalHelpPage(),
     )
     nextButton.grid(row=8, column=2, sticky="E")
@@ -1849,15 +1859,30 @@ def generalHelpPage():
     prevButton = ttk.Button(
         tutorialWindowContentFrame,
         text="<- Previous (SOFA Help)",
+        style='my.TButton',
         command=lambda: sofaHelpPage(),
     )
     prevButton.grid(row=20, column=0, sticky="W")
 
+def apply_theme_to_titlebar(root): # https://github.com/rdbende/Sun-Valley-ttk-theme/tree/main
+    version = sys.getwindowsversion()
+    
+    if version.major == 10 and version.build >= 22000:
+        # Set the title bar color to the background color on Windows 11 for better appearance
+        pywinstyles.change_header_color(root, '#1c1c1c' if sv_ttk.get_theme() == 'dark' else '#fafafa')
+    elif version.major == 10:
+        pywinstyles.change_header_color(root, "dark" if sv_ttk.get_theme() == "dark" else "normal")
+        # A hacky way to update the title bar's color on Windows 10 (it doesn't update instantly like on Windows 11)
+        root.wm_attributes("-alpha", 0.99)
+        root.wm_attributes("-alpha", 1)
 
 root = tk.Tk()
 root.minsize(565, 910)
 root.grid_columnconfigure(0, weight=1)
 root.grid_rowconfigure(0, weight=1)
+
+if sys.platform == 'win32':
+    apply_theme_to_titlebar(root)
 
 centered_window(root)
 try:
@@ -1894,7 +1919,7 @@ hrtfFrame = tk.Frame(hrtfSourceSelectionFrame, borderwidth=10, relief="flat")
 hrtfFrame.grid(row=0, column=0)
 
 selectHRTFFileButton = ttk.Button(
-    hrtfFrame, text="Select HRTF File (.wav)", command=lambda: selectHRTFFile()
+    hrtfFrame, text="Select HRTF File (.wav)", style='my.TButton', command=lambda: selectHRTFFile()
 )
 selectHRTFFileButton.grid(row=0, column=0)
 selectHRTFFileLabel = ttk.Label(
@@ -1904,6 +1929,7 @@ selectHRTFFileLabel.grid(row=1, column=0)
 getHRTFFileDataButton = ttk.Button(
     hrtfFrame,
     text="Get HRTF File Data",
+    style='my.TButton',
     state="disabled",
     command=lambda: getHRTFFileData(hrtf_file, HRIR),
 )
@@ -1911,6 +1937,7 @@ getHRTFFileDataButton.grid(row=3, column=0)
 timeDomainVisualHRTFButton = ttk.Button(
     hrtfFrame,
     text="HRTF Time Domain Visualization",
+    style='my.TButton',
     state="disabled",
     command=lambda: timeDomainVisualHRTF(hrtf_file, HRIR),
 )
@@ -1918,6 +1945,7 @@ timeDomainVisualHRTFButton.grid(row=4, column=0)
 freqDomainVisualHRTFButton = ttk.Button(
     hrtfFrame,
     text="HRTF Frequency Domain Visualization",
+    style='my.TButton',
     state="disabled",
     command=lambda: freqDomainVisualHRTF(hrtf_file),
 )
@@ -1926,7 +1954,7 @@ freqDomainVisualHRTFButton.grid(row=5, column=0)
 sourceFrame = tk.Frame(hrtfSourceSelectionFrame, borderwidth=10, relief="flat")
 sourceFrame.grid(row=0, column=2)
 selectSourceFileButton = ttk.Button(
-    sourceFrame, text="Select source file (.wav)", command=lambda: selectSourceFile()
+    sourceFrame, text="Select source file (.wav)", style='my.TButton', command=lambda: selectSourceFile()
 )
 selectSourceFileLabel = ttk.Label(
     sourceFrame, text="Source file:\n", justify="center", wraplength=120
@@ -1936,6 +1964,7 @@ selectSourceFileLabel.grid(row=1, column=2)
 getSourceFileDataButton = ttk.Button(
     sourceFrame,
     text="Get Source File Data",
+    style='my.TButton',
     state="disabled",
     command=lambda: getSourceFileData(source_file),
 )
@@ -1943,6 +1972,7 @@ getSourceFileDataButton.grid(row=2, column=2)
 spectrogramButton = ttk.Button(
     sourceFrame,
     text="View Spectrogram",
+    style='my.TButton',
     state="disabled",
     command=lambda: spectrogramWindow(source_file),
 )
@@ -1950,6 +1980,7 @@ spectrogramButton.grid(row=3, column=2)
 stereoToMonoButton = ttk.Button(
     sourceFrame,
     text="Source File Stereo -> Mono",
+    style='my.TButton',
     state="disabled",
     command=lambda: stereoToMono(sig),
 )
@@ -1961,6 +1992,7 @@ hrtfOperationsFrame.grid(row=1, column=1)
 resampleButton = ttk.Button(
     hrtfOperationsFrame,
     text="Resample",
+    style='my.TButton',
     state="disabled",
     command=lambda: fs_resample(sig_mono, fs_s, HRIR, fs_H),
 )
@@ -1968,6 +2000,7 @@ resampleButton.grid(row=1, column=1)
 timeDomainConvolveButton = ttk.Button(
     hrtfOperationsFrame,
     text="Time Domain Convolve",
+    style='my.TButton',
     state="disabled",
     command=lambda: timeDomainConvolve(sig_mono, HRIR),
 )
@@ -1975,6 +2008,7 @@ timeDomainConvolveButton.grid(row=2, column=1)
 exportConvolvedButton = ttk.Button(
     hrtfOperationsFrame,
     text="Export Convolved",
+    style='my.TButton',
     state="disabled",
     command=lambda: exportConvolved(Bin_Mix, fs_s, source_file, hrtf_file),
 )
@@ -1995,7 +2029,7 @@ bottomSectionFrame = tk.Frame(rootFrame, borderwidth=10, relief="ridge")
 bottomSectionFrame.grid(row=4, column=0, columnspan=3)
 
 selectSOFAFileButton = ttk.Button(
-    bottomSectionFrame, text="Select SOFA File", command=lambda: selectSOFAFile()
+    bottomSectionFrame, text="Select SOFA File", style='my.TButton', command=lambda: selectSOFAFile()
 )
 selectSOFAFileButton.grid(row=0, column=0, columnspan=3)
 selectSOFAFileLabel = ttk.Label(
@@ -2018,6 +2052,7 @@ bottomRightFrame.grid(row=2, column=2)
 getSOFAFileMetadataButton = ttk.Button(
     bottomLeftFrame,
     text="Get SOFA File Metadata",
+    style='my.TButton',
     state="disabled",
     command=lambda: getSOFAFileMetadata(sofa_file_path_list[0]),
 )
@@ -2025,6 +2060,7 @@ getSOFAFileMetadataButton.grid(row=0, column=0)
 getSOFAFileDimensionsButton = ttk.Button(
     bottomRightFrame,
     text="Get SOFA File Dimensions",
+    style='my.TButton',
     state="disabled",
     command=lambda: getSOFAFileDimensions(sofa_file_path_list[0]),
 )
@@ -2084,6 +2120,7 @@ elevationLabel.grid(row=6, column=0)
 sofaViewButton = ttk.Button(
     bottomSectionFrame,
     text="View SOFA File",
+    style='my.TButton',
     state="disabled",
     command=lambda: viewSOFAGraphs(
         sofa_file_path_list,
@@ -2097,6 +2134,7 @@ sofaViewButton.grid(row=4, column=0, columnspan=2)
 sofaSaveButton = ttk.Button(
     bottomSectionFrame,
     text="Save all SOFA graphs",
+    style='my.TButton',
     state="disabled",
     command=lambda: saveSOFAGraphs(
         sofa_file_path_list,
@@ -2110,6 +2148,7 @@ sofaSaveButton.grid(row=4, column=1, columnspan=2)
 sofaRenderButton = ttk.Button(
     bottomSectionFrame,
     text="Render Source with SOFA file",
+    style='my.TButton',
     state="disabled",
     command=lambda: renderWithSOFA(
         azimuthStringVar.get(),
@@ -2120,10 +2159,10 @@ sofaRenderButton = ttk.Button(
 )
 sofaRenderButton.grid(row=5, column=0, columnspan=3)
 
-tutorialButton = ttk.Button(rootFrame, text="Help", command=lambda: createHelpWindow())
+tutorialButton = ttk.Button(rootFrame, text="Help", style='my.TButton', command=lambda: createHelpWindow())
 tutorialButton.grid(row=6, column=0, sticky="W")
 
-quitButton = ttk.Button(rootFrame, text="Quit", command=lambda: sys.exit())
+quitButton = ttk.Button(rootFrame, text="Quit", style='my.TButton', command=lambda: sys.exit())
 quitButton.grid(row=6, column=2, sticky="E")
 
 # prevents the window from appearing at the bottom of the stack
@@ -2132,5 +2171,8 @@ root.focus_force()
 root.protocol("WM_DELETE_WINDOW", lambda: sys.exit())
 
 sv_ttk.set_theme(darkdetect.theme())
+
+ttkStyles = ttk.Style()
+ttkStyles.configure('my.TButton', font=("SunValleyBodyFont", 9))
 
 root.mainloop()
