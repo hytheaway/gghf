@@ -524,9 +524,10 @@ def stereoToMono(in_sig: np.ndarray):
         messageWindow(
             message="Source file is already mono.", title="Stereo -> Mono", width=350
         )
-    print(getHRTFFileDataButton["state"])
+    
     if getHRTFFileDataButton["state"] == tk.ACTIVE or getHRTFFileDataButton["state"] == 'active' or str(getHRTFFileDataButton["state"]) == 'active':
         resampleButton.config(state="active")
+
 
 
 def fs_resample(s1: np.ndarray, f1: int, s2: np.ndarray, f2: int):
