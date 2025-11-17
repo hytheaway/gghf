@@ -8,6 +8,21 @@
 import sys  # <- replacement for pythonic quit(), which doesn't play nicely with cx_freeze
 import os  # <- reading files from disk, adapting to differing os directory path conventions
 import tempfile  # <- adapting to differing os temp file locations
+from unittest.mock import MagicMock # <- trying to get librosa to run without numba so i can use nuitka for compile; see https://github.com/librosa/librosa/issues/1854#event-18920426125
+
+# mock numba module
+sys.modules['numba'] = MagicMock()
+
+# no-op decorator w arguments
+def no_op_decorator(*args, **kwargs):
+    if len(args) == 1 and callable(args[0]):
+        return args[0] # jit w/o args
+    else:
+        def wrapper(func):
+            return func # jit w/ args
+        return wrapper
+
+sys.modules['numba'].jit == no_op_decorator
 
 os.environ["LIBROSA_CACHE_DIR"] = str(
     tempfile.gettempdir()
@@ -509,9 +524,10 @@ def stereoToMono(in_sig: np.ndarray):
         messageWindow(
             message="Source file is already mono.", title="Stereo -> Mono", width=350
         )
-    print(getHRTFFileDataButton["state"])
+    
     if getHRTFFileDataButton["state"] == tk.ACTIVE or getHRTFFileDataButton["state"] == 'active' or str(getHRTFFileDataButton["state"]) == 'active':
         resampleButton.config(state="active")
+
 
 
 def fs_resample(s1: np.ndarray, f1: int, s2: np.ndarray, f2: int):

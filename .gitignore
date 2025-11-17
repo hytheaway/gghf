@@ -1,8 +1,10 @@
 .DS_Store
 .venv
+.gitignore
 _OLD
 _pyinstaller
 __pycache__
 _nuitka
 build
 dist
+main.bin
