@@ -8,7 +8,7 @@
 import sys  # <- replacement for pythonic quit(), which doesn't play nicely with cx_freeze
 import os  # <- reading files from disk, adapting to differing os directory path conventions
 import tempfile  # <- adapting to differing os temp file locations
-from unittest.mock import MagicMock # <- trying to get librosa to run without numba so i can use nuitka for compile
+from unittest.mock import MagicMock # <- trying to get librosa to run without numba so i can use nuitka for compile; see https://github.com/librosa/librosa/issues/1854#event-18920426125
 
 # mock numba module
 sys.modules['numba'] = MagicMock()
