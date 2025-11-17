@@ -8,6 +8,21 @@
 import sys  # <- replacement for pythonic quit(), which doesn't play nicely with cx_freeze
 import os  # <- reading files from disk, adapting to differing os directory path conventions
 import tempfile  # <- adapting to differing os temp file locations
+from unittest.mock import MagicMock # <- trying to get librosa to run without numba so i can use nuitka for compile
+
+# mock numba module
+sys.modules['numba'] = MagicMock()
+
+# no-op decorator w arguments
+def no_op_decorator(*args, **kwargs):
+    if len(args) == 1 and callable(args[0]):
+        return args[0] # jit w/o args
+    else:
+        def wrapper(func):
+            return func # jit w/ args
+        return wrapper
+
+sys.modules['numba'].jit == no_op_decorator
 
 os.environ["LIBROSA_CACHE_DIR"] = str(
     tempfile.gettempdir()
