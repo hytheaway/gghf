@@ -1903,6 +1903,9 @@ def generalHelpPage():
     )
     prevButton.grid(row=20, column=0, sticky="W")
 
+def quit_function():
+    pygame.quit()
+    sys.exit()
 
 def apply_theme_to_titlebar(
     root,
@@ -2221,7 +2224,7 @@ tutorialButton = ttk.Button(
 tutorialButton.grid(row=6, column=0, sticky="W")
 
 quitButton = ttk.Button(
-    rootFrame, text="Quit", style="my.TButton", command=lambda: sys.exit()
+    rootFrame, text="Quit", style="my.TButton", command=lambda: quit_function()
 )
 quitButton.grid(row=6, column=2, sticky="E")
 
