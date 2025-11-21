@@ -8,3 +8,5 @@ _nuitka
 build
 dist
 main.bin
+nuitka-crash-report.xml
+nuitka.txt
