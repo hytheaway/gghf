@@ -60,6 +60,12 @@ if sys.platform == "win32":
     except:
         pass
 
+if sys.platform == "darwin":
+    pass
+
+if sys.platform == "linux":
+    pass
+
 librosa.cache.clear(warn=False)
 
 source_file = None
@@ -285,6 +291,10 @@ def selectHRTFFile():
             timeDomainVisualHRTFButton.config(state="active")
             freqDomainVisualHRTFButton.config(state="active")
             resampleButton.config(state="disabled")
+            # root_menu_file_hrtf.entryconfigure(1, state='normal') # separator
+            root_menu_file_hrtf.entryconfigure(2, state='normal')
+            root_menu_file_hrtf.entryconfigure(3, state='normal')
+            root_menu_file_hrtf.entryconfigure(4, state='normal')
             [HRIR, fs_H] = sf.read(hrtf_file)
         else:
             return
@@ -324,6 +334,10 @@ def selectSourceFile():
         stereoToMonoButton.config(state="active")
         spectrogramButton.config(state="active")
         resampleButton.config(state="disabled")
+        # root_menu_file_source.entryconfig(1, state='normal') # separator
+        root_menu_file_source.entryconfig(2, state='normal')
+        root_menu_file_source.entryconfig(3, state='normal')
+        root_menu_file_source.entryconfig(4, state='normal')
         [sig, fs_s] = sf.read(source_file)
 
 
@@ -687,7 +701,9 @@ def selectSOFAFile():
         elevationTextBox.config(state="disabled")
         sofaRenderButton.config(state="disabled")
         sofaViewButton.config(text="View SOFA HRTF")
+        root_menu_file_sofa.entryconfig(5, label='View SOFA HRTF', state='normal')
         sofaSaveButton.config(text="Save SOFA HRTF")
+        root_menu_file_sofa.entryconfig(6, label='Save SOFA HRTF...', state='normal')
 
     if len(sofa_file_path_list) == 1:
         sofa_mode_selection = 0
@@ -722,6 +738,14 @@ def selectSOFAFile():
                 sofaRenderButton.config(state="active")
                 sofaViewButton.config(text="View SOFA File")
                 sofaSaveButton.config(text="Save all SOFA graphs")
+                # root_menu_file_sofa.entryconfig(1, state='normal') # separator
+                root_menu_file_sofa.entryconfig(2, state='normal')
+                root_menu_file_sofa.entryconfig(3, state='normal')
+                # root_menu_file_sofa.entryconfig(4, state='normal') # separator
+                root_menu_file_sofa.entryconfig(5, state='normal')
+                root_menu_file_sofa.entryconfig(6, state='normal')
+                # root_menu_file_sofa.entryconfig(7, state='normal') # separator
+                root_menu_file_sofa.entryconfig(8, state='normal')
             else:
                 return
 
@@ -1585,8 +1609,27 @@ def callback_url(url: str):
 
 
 def clearWidgets(frame_to_clear):
+    """
+    Clears given frame.
+
+    Args:
+        frame_to_clear (frame): tk.Frame to clear
+    """    
     for widget in frame_to_clear.winfo_children():
         widget.destroy()
+
+
+def showPreferencesWindow(): # unused, idk what preferences i'd even include in a program like this, and if i do include preferences, then i need to store them somewhere and that seems like a headache
+    preferencesWindow = tk.Toplevel(root)
+    apply_theme_to_titlebar(preferencesWindow)
+    preferencesWindow.iconphoto(False, icon_photo)
+    preferencesWindow.grid_columnconfigure(0, weight=1)
+    preferencesWindow.grid_rowconfigure(0, weight=1)
+    preferencesWindow.minsize(400, 450)
+    preferencesWindow.title('Preferences')
+    preferencesWindowContentFrame = tk.Frame(preferencesWindow, borderwidth=10, relief="flat")
+    preferencesWindowContentFrame.grid(row=0, column=0)
+    centered_window(preferencesWindow)
 
 
 def createHelpWindow():
@@ -1597,10 +1640,11 @@ def createHelpWindow():
     tutorialWindow.iconphoto(False, icon_photo)
     tutorialWindow.grid_columnconfigure(0, weight=1)
     tutorialWindow.grid_rowconfigure(0, weight=1)
-    tutorialWindow.minsize(650, 400)
+    tutorialWindow.minsize(1250, 750)
     tutorialWindow.title("Help")
     tutorialWindowContentFrame = tk.Frame(tutorialWindow, borderwidth=10, relief="flat")
     tutorialWindowContentFrame.grid(row=0, column=0)
+    centered_window(tutorialWindow)
     hrtfHelpPage()
 
 
@@ -1904,6 +1948,9 @@ def generalHelpPage():
     prevButton.grid(row=20, column=0, sticky="W")
 
 def quit_function():
+    """
+    Quit function that properly closes out of pygame and the python script, which prevents a segfault when this project is compiled by nuitka.
+    """    
     pygame.quit()
     sys.exit()
 
@@ -1933,6 +1980,119 @@ root = tk.Tk()
 root.minsize(565, 910)
 root.grid_columnconfigure(0, weight=1)
 root.grid_rowconfigure(0, weight=1)
+
+# print(root.tk.call('tk', 'windowingsystem'))
+
+# menu bar stuff
+root.option_add('*tearOff', False)
+
+root_menubar = tk.Menu(root)
+root['menu'] = root_menubar
+
+# File menu
+root_menu_file = tk.Menu(root_menubar)
+root_menubar.add_cascade(menu=root_menu_file, label='File')
+
+root_menu_file_hrtf = tk.Menu(root_menu_file)
+root_menu_file.add_cascade(menu=root_menu_file_hrtf, label='HRTF')
+root_menu_file_hrtf.add_command(label='Load HRTF file (.wav)...',
+                                command=lambda: selectHRTFFile())
+root_menu_file_hrtf.add_separator()
+root_menu_file_hrtf.add_command(label='Get HRTF file data',
+                                command=lambda: getHRTFFileData(hrtf_file, HRIR),
+                                state='disabled')
+root_menu_file_hrtf.add_command(label='HRTF time domain visualization',
+                                command=lambda: timeDomainVisualHRTF(hrtf_file, HRIR),
+                                state='disabled')
+root_menu_file_hrtf.add_command(label='HRTF frequency domain visualization',
+                                command=lambda: freqDomainVisualHRTF(hrtf_file),
+                                state='disabled')
+
+root_menu_file_source = tk.Menu(root_menu_file)
+root_menu_file.add_cascade(menu=root_menu_file_source, label='Source')
+root_menu_file_source.add_command(label='Load source file (.wav)...',
+                                  command=lambda: selectSourceFile())
+root_menu_file_source.add_separator()
+root_menu_file_source.add_command(label='Get source file data',
+                                  command=lambda: getSourceFileData(source_file),
+                                  state='disabled')
+root_menu_file_source.add_command(label='View spectrogram...',
+                                  command=lambda: spectrogramWindow(source_file),
+                                  state='disabled')
+root_menu_file_source.add_command(label='Source file stereo -> mono',
+                                  command=lambda: stereoToMono(sig),
+                                  state='disabled')
+
+root_menu_file_sofa = tk.Menu(root_menu_file)
+root_menu_file.add_cascade(menu=root_menu_file_sofa, label='SOFA')
+root_menu_file_sofa.add_command(label='Load SOFA file (.sofa)...',
+                                command=lambda: selectSOFAFile())
+root_menu_file_sofa.add_separator()
+root_menu_file_sofa.add_command(label='Get SOFA file metadata',
+                                command=lambda: getSOFAFileMetadata(sofa_file_path_list[0]),
+                                state='disabled')
+root_menu_file_sofa.add_command(label='Get SOFA file dimensions',
+                                command=lambda: getSOFAFileDimensions(sofa_file_path_list[0]),
+                                state='disabled')
+root_menu_file_sofa.add_separator()
+root_menu_file_sofa.add_command(label='View SOFA file',
+                                command=lambda: viewSOFAGraphs(
+                                                    sofa_file_path_list,
+                                                    freqXLimStringVar.get(),
+                                                    magYLimStringVar.get(),
+                                                    sofaMeasurementStringVar.get(),
+                                                    sofaEmitterStringVar.get(),
+                                                ),
+                                state='disabled')
+root_menu_file_sofa.add_command(label='Save all SOFA graphs...',
+                                command=lambda: saveSOFAGraphs(
+                                                    sofa_file_path_list,
+                                                    freqXLimStringVar.get(),
+                                                    magYLimStringVar.get(),
+                                                    sofaMeasurementStringVar.get(),
+                                                    sofaEmitterStringVar.get(),
+                                                ),
+                                state='disabled')
+root_menu_file_sofa.add_separator()
+root_menu_file_sofa.add_command(label='Render source with SOFA file...',
+                                command=lambda: renderWithSOFA(
+                                                    azimuthStringVar.get(),
+                                                    elevationStringVar.get(),
+                                                    source_file,
+                                                    sofa_file_path_list[0],
+                                                ),
+                                state='disabled')
+
+# Edit menu
+# root_menu_edit = tk.Menu(root_menubar)
+# root_menubar.add_cascade(menu=root_menu_edit, label='Edit')
+
+if sys.platform == "darwin": # macOS
+    # Shortcuts for file menu
+    root_menu_file_hrtf.entryconfigure('Load HRTF file (.wav)...', accelerator='Control+H')
+    root.bind('<Control-h>', lambda x:selectHRTFFile())
+    
+    root_menu_file_source.entryconfigure('Load source file (.wav)...', accelerator='Control+R')
+    root.bind('<Control-r>', lambda x:selectSourceFile())
+    
+    root_menu_file_sofa.entryconfigure('Load SOFA file (.sofa)...', accelerator='Control+F')
+    root.bind('<Control-f>', lambda x:selectSOFAFile())
+    
+    # macOS window menu
+    window_menu = tk.Menu(root_menubar, name='window')
+    root_menubar.add_cascade(menu=window_menu, label='Window')
+    
+    # macOS help menu
+    help_menu = tk.Menu(root_menubar, name='help')
+    root_menubar.add_cascade(menu=help_menu, label='Help')
+    root.createcommand('tk::mac::ShowHelp', lambda:createHelpWindow())
+    
+    pass
+
+if sys.platform == 'win32':
+    sysmenu = tk.Menu(root_menubar, name='system')
+    root_menubar.add_cascade(menu=sysmenu)
+    pass
 
 centered_window(root)
 try:
