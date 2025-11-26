@@ -1977,7 +1977,7 @@ def apply_theme_to_titlebar(
 
 
 root = tk.Tk()
-root.minsize(565, 980)
+root.minsize(565, 960)
 root.grid_columnconfigure(0, weight=1)
 root.grid_rowconfigure(0, weight=1)
 
