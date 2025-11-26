@@ -736,7 +736,7 @@ def selectSOFAFile():
                 azimuthTextBox.config(state="normal")
                 elevationTextBox.config(state="normal")
                 sofaRenderButton.config(state="active")
-                sofaViewButton.config(text="View SOFA File")
+                sofaViewButton.config(text="View SOFA file")
                 sofaSaveButton.config(text="Save all SOFA graphs")
                 # root_menu_file_sofa.entryconfig(1, state='normal') # separator
                 root_menu_file_sofa.entryconfig(2, state='normal')
@@ -1083,9 +1083,11 @@ def viewSOFAGraphs(
         measurement = 0
     if not emitter:
         emitter = 1
-
+    
     legend = []
-
+    
+    bool_plot_hrtf = True
+    
     if sofa_mode_selection == 0:
         in_sofa_file = in_sofa_file[0]
 
@@ -1094,14 +1096,23 @@ def viewSOFAGraphs(
             figsize=(10, 7),
             num=str("SOFA Source Positions for " + os.path.basename(in_sofa_file)),
         )
-        plot_coordinates(in_sofa_file, sofa_pos_fig)
-
-        plotHRIR(in_sofa_file, legend, measurement, emitter)
-
-    plotHRTF(in_sofa_file, legend, xlim, ylim, measurement, emitter)
-
+        try:
+            plotHRIR(in_sofa_file, legend, measurement, emitter)
+            plot_coordinates(in_sofa_file, sofa_pos_fig)
+        except (AttributeError or Exception) as e: # if the SOFA file is SOS, I can't currently use it, so just show the coordinate plot. 
+            plt.close() # trash whatever plots are currently in memory (since plotHRIR needs to try to plot something before it can throw an error, and without this then a blank HRIR graph would pop up.)
+            errorWindow(error_message=f"{e}\nThis SOFA file is not supported for\nHRIR or HRTF.")
+            plot_coordinates(in_sofa_file, sofa_pos_fig)
+            bool_plot_hrtf = False
+            plt.show()
+            plt.close()
+            return -1
+    
+    if bool_plot_hrtf: # probably redundant, since the exception handling should exit the function if there's an exception before this point.
+        plotHRTF(in_sofa_file, legend, xlim, ylim, measurement, emitter)
+    
     plt.show()
-
+    
     plt.close()
     return
 
@@ -1157,6 +1168,7 @@ def saveSOFAGraphs(
             figsize=(10, 7),
             num=str("SOFA Source Positions for " + os.path.basename(in_sofa_file)),
         )
+            
         plot_coordinates(in_sofa_file, sofa_pos_fig)
         plt.savefig(
             os.path.join(
@@ -1168,10 +1180,11 @@ def saveSOFAGraphs(
                 ),
             )
         )
-
+        
         # plot & save HRIR
-        plotHRIR(in_sofa_file, legend, measurement, emitter)
-        plt.savefig(
+        try:
+            plotHRIR(in_sofa_file, legend, measurement, emitter)
+            plt.savefig(
             os.path.join(
                 export_directory,
                 (
@@ -1183,7 +1196,12 @@ def saveSOFAGraphs(
                 ),
             )
         )
-
+        except (AttributeError or Exception) as e: # if the SOFA file is SOS, I can't currently use it, so just show the coordinate plot. 
+            plt.close() # trash whatever plots are currently in memory (since plotHRIR needs to try to plot something before it can throw an error, and without this then a blank HRIR graph would pop up.)
+            errorWindow(error_message=f"{e}\nThis SOFA file is not supported for\nHRIR or HRTF.")
+            return -1
+        
+        
     if sofa_mode_selection == 1:
         export_directory = os.path.join(
             export_directory, "hrtf-comparison-measurements"
