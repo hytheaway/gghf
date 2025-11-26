@@ -687,11 +687,11 @@ def selectSOFAFile():
                     return
                 else:
                     continue
-        selectSOFAFileLabel.config(text="SOFA file:\nHover to see selected files.")
+        selectSOFAFileLabel.config(text="SOFA files:\nHover to see selected files.")
         create_tooltip(
             selectSOFAFileLabel,
             (
-                "NOTE: Graph viewing only - Rendering disabled when multiple SOFA files are selected.\n"
+                "NOTE: Graph viewing only - Convolution disabled when multiple SOFA files are selected.\n"
                 + "\n".join(map(str, sofa_file_path_list))
             ),
         )
@@ -702,7 +702,7 @@ def selectSOFAFile():
         sofaRenderButton.config(state="disabled")
         sofaViewButton.config(text="View SOFA HRTF")
         root_menu_file_sofa.entryconfig(5, label='View SOFA HRTF', state='normal')
-        sofaSaveButton.config(text="Save SOFA HRTF")
+        sofaSaveButton.config(text="Save SOFA HRTF...")
         root_menu_file_sofa.entryconfig(6, label='Save SOFA HRTF...', state='normal')
 
     if len(sofa_file_path_list) == 1:
@@ -1660,43 +1660,43 @@ def hrtfHelpPage():
 
     selectHRTFTutorialLabel = tk.Label(
         tutorialWindowContentFrame,
-        text='"Select HRTF File (.wav)"\nPresents dialogue box for selecting HRTF.\nOnly takes .wav files. Expects an IR.\n',
+        text='"Select HRTF file (.wav)..."\nPresents dialogue box for selecting HRTF.\nOnly takes .wav files. Expects an IR.\n',
     )
     selectHRTFTutorialLabel.grid(row=1, column=0)
     getHRTFFileDataTutorialLabel = tk.Label(
         tutorialWindowContentFrame,
-        text='"Get HRTF File Data"\nPresents info about HRTF file, including:\n- Sample rate\n- Data dimension (num samples, num channels)\n- Ability to play loaded HRTF file.\n',
+        text='"Get HRTF file data"\nPresents info about HRTF file, including:\n- Sample rate\n- Data dimension (num samples, num channels)\n- Ability to play loaded HRTF file.\n',
     )
     getHRTFFileDataTutorialLabel.grid(row=2, column=0)
     hrtfTimeDomainVisualizationTutorialLabel = tk.Label(
         tutorialWindowContentFrame,
-        text='"HRTF Time Domain Visualization"\nTime domain plot of loaded HRTF.\n',
+        text='"HRTF time domain visualization"\nTime domain plot of loaded HRTF.\n',
     )
     hrtfTimeDomainVisualizationTutorialLabel.grid(row=3, column=0)
     hrtfFrequencyDomainVisualizationTutorialLabel = tk.Label(
         tutorialWindowContentFrame,
-        text='"HRTF Frequency Domain Visualization"\nFrequency domain plot of loaded HRTF.\n',
+        text='"HRTF frequency domain visualization"\nFrequency domain plot of loaded HRTF.\n',
     )
     hrtfFrequencyDomainVisualizationTutorialLabel.grid(row=4, column=0)
 
     selectSourceFileTutorialLabel = tk.Label(
         tutorialWindowContentFrame,
-        text='"Select Source File (.wav)"\nPresents dialogue box for selecting a source file.\nOnly takes .wav files.\nUsed for convolving with loaded HRTF.\nAlso used for convolving with loaded SOFA file.\n',
+        text='"Select source file (.wav)..."\nPresents dialogue box for selecting a source file.\nOnly takes .wav files.\nUsed for convolving with loaded HRTF.\nAlso used for convolving with loaded SOFA file.\n',
     )
     selectSourceFileTutorialLabel.grid(row=1, column=2)
     getSourceFileDataTutorialLabel = tk.Label(
         tutorialWindowContentFrame,
-        text='"Get Source File Data"\nPresents info about source file, including:\n- Sample rate\n- Data dimension (num samples, num channels)\n- Ability to play loaded selected file.\n',
+        text='"Get source file data"\nPresents info about source file, including:\n- Sample rate\n- Data dimension (num samples, num channels)\n- Ability to play loaded selected file.\n',
     )
     getSourceFileDataTutorialLabel.grid(row=2, column=2)
     spectrogramTutorialLabel = tk.Label(
         tutorialWindowContentFrame,
-        text='"View Spectrogram"\nOpens a menu for configuring and\n viewing a spectrogram of the loaded source file.\n',
+        text='"View spectrogram..."\nOpens a menu for configuring and\n viewing a spectrogram of the loaded source file.\n',
     )
     spectrogramTutorialLabel.grid(row=3, column=2)
     stereoToMonoTutorialLabel = tk.Label(
         tutorialWindowContentFrame,
-        text='"Source File Stereo -> Mono"\nDownmixes stereo file into mono\nfor convenience with convolving.\n',
+        text='"Source file stereo -> mono"\nDownmixes stereo file into mono\nfor convenience with convolving.\n',
     )
     stereoToMonoTutorialLabel.grid(row=4, column=2)
 
@@ -1707,12 +1707,12 @@ def hrtfHelpPage():
     resampleTutorialLabel.grid(row=5, column=1)
     timeDomainConvolveTutorialLabel = tk.Label(
         tutorialWindowContentFrame,
-        text='"Time Domain Convolve"\nTime domain convolves loaded source file with loaded HRTF file.\nSource file should either match HRTF file sample rate,\nor have been resampled with the button above.\nConvolved file is held in memory, not exported.\n',
+        text='"Time domain convolve"\nTime domain convolves loaded source file with loaded HRTF file.\nSource file should either match HRTF file sample rate,\nor have been resampled with the button above.\nConvolved file is held in memory, not exported.\n',
     )
     timeDomainConvolveTutorialLabel.grid(row=6, column=1)
     exportConvolvedTutorialLabel = tk.Label(
         tutorialWindowContentFrame,
-        text='"Export Convolved"\nExports the time domain convolved file loaded in memory.\nFile naming convention is:\n[Source File Name]-[HRTF File Name]-export.wav\n',
+        text='"Export convolved..."\nExports the time domain convolved file loaded in memory.\nFile naming convention is:\n[Source File Name]-[HRTF File Name]-export.wav\n',
     )
     exportConvolvedTutorialLabel.grid(row=7, column=1)
 
@@ -1736,12 +1736,12 @@ def sofaHelpPage():
 
     selectSOFAFileTutorialLabel = tk.Label(
         tutorialWindowContentFrame,
-        text='"Select SOFA File"\nPresents dialogue box for selecting .SOFA file(s).\n',
+        text='"Select SOFA file(s) (.sofa)..."\nPresents dialogue box for selecting .SOFA file(s).\n',
     )
     selectSOFAFileTutorialLabel.grid(row=1, column=1)
     getSOFAFileMetadataTutorialLabel = tk.Label(
         tutorialWindowContentFrame,
-        text='"Get SOFA File Metadata"\nPresents metadata embedded in the loaded SOFA file.\nFollows SOFA convention.\n',
+        text='"Get SOFA file metadata"\nPresents metadata embedded in the loaded SOFA file.\nFollows SOFA convention.\n',
     )
     getSOFAFileMetadataTutorialLabel.grid(row=2, column=0)
     sofaMeasurementTutorialLabel = tk.Label(
@@ -1751,7 +1751,7 @@ def sofaHelpPage():
     sofaMeasurementTutorialLabel.grid(row=3, column=0)
     frequencyXLimTutorialLabel = tk.Label(
         tutorialWindowContentFrame,
-        text='"Frequency Range (Hz)"\nConfigurable range for x-axis of .SOFA file plot.\nDefaults to [20, 20000].\n',
+        text='"Frequency range (Hz)"\nConfigurable range for x-axis of .SOFA file plot.\nDefaults to [20, 20000].\n',
     )
     frequencyXLimTutorialLabel.grid(row=4, column=0)
     desiredAzimuthTutorialLabel = tk.Label(
@@ -1762,7 +1762,7 @@ def sofaHelpPage():
 
     getSOFAFileDimensionsTutorialLabel = tk.Label(
         tutorialWindowContentFrame,
-        text='"Get SOFA File Dimensions"\nPresents info about the SOFA convention dimensions\nwithin the .SOFA file.\n',
+        text='"Get SOFA file dimensions"\nPresents info about the SOFA convention dimensions\nwithin the .SOFA file.\n',
     )
     getSOFAFileDimensionsTutorialLabel.grid(row=2, column=2)
     sofaEmitterTutorialLabel = tk.Label(
@@ -1783,17 +1783,17 @@ def sofaHelpPage():
 
     viewSOFAFileTutorialLabel = tk.Label(
         tutorialWindowContentFrame,
-        text='"View SOFA File/View SOFA HRTF"\nTakes the above selected values\nand presents a 3D view of the .SOFA file,\n in addition to individual measurements\nfrom the .SOFA file.\nIf multiple .SOFA files are selected,\n the only graph displayed will be a layered HRTF graph.\n',
+        text='"View SOFA file/View SOFA HRTF"\nTakes the above selected values\nand presents a 3D view of the .SOFA file,\n in addition to individual measurements\nfrom the .SOFA file.\nIf multiple .SOFA files are selected,\n the only graph displayed will be a layered HRTF graph.\n',
     )
     viewSOFAFileTutorialLabel.grid(row=6, column=0)
     saveSOFAFileTutorialLabel = tk.Label(
         tutorialWindowContentFrame,
-        text='"Save all SOFA graphs/Save SOFA HRTF"\nSaves graphs/plots for source positions,\nhead-related impulse response, and head-related transfer function\nfor the provided azimuth, elevation, emitter, and measurement index to\nthe provided directory.\nIf multiple .SOFA files are selected,\n the only graph saved will be a layered HRTF graph.\n',
+        text='"Save all SOFA graphs.../Save SOFA HRTF..."\nSaves graphs/plots for source positions,\nhead-related impulse response, and head-related transfer function\nfor the provided azimuth, elevation, emitter, and measurement index to\nthe provided directory.\nIf multiple .SOFA files are selected,\n the only graph saved will be a layered HRTF graph.\n',
     )
     saveSOFAFileTutorialLabel.grid(row=6, column=2)
     renderSOFATutorialLabel = tk.Label(
         tutorialWindowContentFrame,
-        text='"Render Source with SOFA File"\nConvolves the source file with\nthe desired values in the .SOFA file.\nDisabled if multiple .SOFA files are selected.\n',
+        text='"Render source with SOFA file..."\nConvolves the source file with\nthe desired values in the .SOFA file.\nDisabled if multiple .SOFA files are selected.\n',
     )
     renderSOFATutorialLabel.grid(row=7, column=1)
 
@@ -1977,7 +1977,7 @@ def apply_theme_to_titlebar(
 
 
 root = tk.Tk()
-root.minsize(565, 910)
+root.minsize(565, 980)
 root.grid_columnconfigure(0, weight=1)
 root.grid_rowconfigure(0, weight=1)
 
@@ -2063,9 +2063,6 @@ root_menu_file_sofa.add_command(label='Render source with SOFA file...',
                                                 ),
                                 state='disabled')
 
-# Edit menu
-# root_menu_edit = tk.Menu(root_menubar)
-# root_menubar.add_cascade(menu=root_menu_edit, label='Edit')
 
 if sys.platform == "darwin": # macOS
     # Shortcuts for file menu
@@ -2140,7 +2137,7 @@ hrtfFrame.grid(row=0, column=0)
 
 selectHRTFFileButton = ttk.Button(
     hrtfFrame,
-    text="Select HRTF File (.wav)",
+    text="Select HRTF file (.wav)...",
     style="my.TButton",
     command=lambda: selectHRTFFile(),
 )
@@ -2151,7 +2148,7 @@ selectHRTFFileLabel = ttk.Label(
 selectHRTFFileLabel.grid(row=1, column=0)
 getHRTFFileDataButton = ttk.Button(
     hrtfFrame,
-    text="Get HRTF File Data",
+    text="Get HRTF file data",
     style="my.TButton",
     state="disabled",
     command=lambda: getHRTFFileData(hrtf_file, HRIR),
@@ -2159,7 +2156,7 @@ getHRTFFileDataButton = ttk.Button(
 getHRTFFileDataButton.grid(row=3, column=0)
 timeDomainVisualHRTFButton = ttk.Button(
     hrtfFrame,
-    text="HRTF Time Domain Visualization",
+    text="HRTF time domain visualization",
     style="my.TButton",
     state="disabled",
     command=lambda: timeDomainVisualHRTF(hrtf_file, HRIR),
@@ -2167,7 +2164,7 @@ timeDomainVisualHRTFButton = ttk.Button(
 timeDomainVisualHRTFButton.grid(row=4, column=0)
 freqDomainVisualHRTFButton = ttk.Button(
     hrtfFrame,
-    text="HRTF Frequency Domain Visualization",
+    text="HRTF frequency domain visualization",
     style="my.TButton",
     state="disabled",
     command=lambda: freqDomainVisualHRTF(hrtf_file),
@@ -2178,7 +2175,7 @@ sourceFrame = tk.Frame(hrtfSourceSelectionFrame, borderwidth=10, relief="flat")
 sourceFrame.grid(row=0, column=2)
 selectSourceFileButton = ttk.Button(
     sourceFrame,
-    text="Select source file (.wav)",
+    text="Select source file (.wav)...",
     style="my.TButton",
     command=lambda: selectSourceFile(),
 )
@@ -2189,7 +2186,7 @@ selectSourceFileButton.grid(row=0, column=2)
 selectSourceFileLabel.grid(row=1, column=2)
 getSourceFileDataButton = ttk.Button(
     sourceFrame,
-    text="Get Source File Data",
+    text="Get source file data",
     style="my.TButton",
     state="disabled",
     command=lambda: getSourceFileData(source_file),
@@ -2197,7 +2194,7 @@ getSourceFileDataButton = ttk.Button(
 getSourceFileDataButton.grid(row=2, column=2)
 spectrogramButton = ttk.Button(
     sourceFrame,
-    text="View Spectrogram",
+    text="View spectrogram...",
     style="my.TButton",
     state="disabled",
     command=lambda: spectrogramWindow(source_file),
@@ -2205,7 +2202,7 @@ spectrogramButton = ttk.Button(
 spectrogramButton.grid(row=3, column=2)
 stereoToMonoButton = ttk.Button(
     sourceFrame,
-    text="Source File Stereo -> Mono",
+    text="Source file stereo -> mono",
     style="my.TButton",
     state="disabled",
     command=lambda: stereoToMono(sig),
@@ -2225,7 +2222,7 @@ resampleButton = ttk.Button(
 resampleButton.grid(row=1, column=1)
 timeDomainConvolveButton = ttk.Button(
     hrtfOperationsFrame,
-    text="Time Domain Convolve",
+    text="Time domain convolve",
     style="my.TButton",
     state="disabled",
     command=lambda: timeDomainConvolve(sig_mono, HRIR),
@@ -2233,7 +2230,7 @@ timeDomainConvolveButton = ttk.Button(
 timeDomainConvolveButton.grid(row=2, column=1)
 exportConvolvedButton = ttk.Button(
     hrtfOperationsFrame,
-    text="Export Convolved",
+    text="Export convolved...",
     style="my.TButton",
     state="disabled",
     command=lambda: exportConvolved(Bin_Mix, fs_s, source_file, hrtf_file),
@@ -2256,7 +2253,7 @@ bottomSectionFrame.grid(row=4, column=0, columnspan=3)
 
 selectSOFAFileButton = ttk.Button(
     bottomSectionFrame,
-    text="Select SOFA File",
+    text="Select SOFA file(s) (.sofa)...",
     style="my.TButton",
     command=lambda: selectSOFAFile(),
 )
@@ -2280,75 +2277,68 @@ bottomRightFrame.grid(row=2, column=2)
 
 getSOFAFileMetadataButton = ttk.Button(
     bottomLeftFrame,
-    text="Get SOFA File Metadata",
+    text="Get SOFA file metadata",
     style="my.TButton",
     state="disabled",
     command=lambda: getSOFAFileMetadata(sofa_file_path_list[0]),
 )
 getSOFAFileMetadataButton.grid(row=0, column=0)
+
 getSOFAFileDimensionsButton = ttk.Button(
     bottomRightFrame,
-    text="Get SOFA File Dimensions",
+    text="Get SOFA file dimensions",
     style="my.TButton",
     state="disabled",
     command=lambda: getSOFAFileDimensions(sofa_file_path_list[0]),
 )
 getSOFAFileDimensionsButton.grid(row=0, column=0)
 
+bottomLeftSeparator = ttk.Label(bottomLeftFrame, text='', justify='center')
+bottomLeftSeparator.grid(row=1, column=0)
+
+bottomRightSeparator = ttk.Label(bottomRightFrame, text='', justify='center')
+bottomRightSeparator.grid(row=1, column=0)
+
 sofaMeasurementTextBox = ttk.Entry(
     bottomLeftFrame, state="disabled", width=5, textvariable=sofaMeasurementStringVar
 )
-sofaMeasurementTextBox.grid(row=1, column=0)
+sofaMeasurementTextBox.grid(row=2, column=0)
 sofaMeasurementLabel = ttk.Label(
-    bottomLeftFrame, text="Measurement Index\n(default: 0)\n", justify="center"
+    bottomLeftFrame, text="Measurement index\n(default: 0)\n", justify="center"
 )
-sofaMeasurementLabel.grid(row=2, column=0)
+sofaMeasurementLabel.grid(row=3, column=0)
 sofaEmitterTextBox = ttk.Entry(
     bottomRightFrame, state="disabled", width=5, textvariable=sofaEmitterStringVar
 )
-sofaEmitterTextBox.grid(row=1, column=0)
+sofaEmitterTextBox.grid(row=2, column=0)
 sofaEmitterLabel = ttk.Label(
     bottomRightFrame, text="Emitter\n(default: 1)\n", justify="center"
 )
-sofaEmitterLabel.grid(row=2, column=0)
+sofaEmitterLabel.grid(row=3, column=0)
 
 frequencyXLimTextBox = ttk.Entry(
     bottomLeftFrame, state="disabled", width=15, textvariable=freqXLimStringVar
 )
-frequencyXLimTextBox.grid(row=3, column=0)
+frequencyXLimTextBox.grid(row=4, column=0)
+
 frequencyXLimLabel = ttk.Label(
-    bottomLeftFrame, text="Frequency Range (Hz)\n[start, end]", justify="center"
+    bottomLeftFrame, text="Frequency range (Hz)\n[start, end]\n", justify="center"
 )
-frequencyXLimLabel.grid(row=4, column=0)
+frequencyXLimLabel.grid(row=5, column=0)
+
 magnitudeYLimTextBox = ttk.Entry(
     bottomRightFrame, state="disabled", width=15, textvariable=magYLimStringVar
 )
-magnitudeYLimTextBox.grid(row=3, column=0)
-magnitudeYLimLabel = ttk.Label(
-    bottomRightFrame, text="Magnitude (dB)\n[start, end]", justify="center"
-)
-magnitudeYLimLabel.grid(row=4, column=0)
+magnitudeYLimTextBox.grid(row=4, column=0)
 
-azimuthTextBox = ttk.Entry(
-    bottomLeftFrame, state="disabled", width=5, textvariable=azimuthStringVar
+magnitudeYLimLabel = ttk.Label(
+    bottomRightFrame, text="Magnitude (dB)\n[start, end]\n", justify="center"
 )
-azimuthTextBox.grid(row=5, column=0)
-azimuthLabel = ttk.Label(
-    bottomLeftFrame, text="Desired azimuth (in deg)", justify="center"
-)
-azimuthLabel.grid(row=6, column=0)
-elevationTextBox = ttk.Entry(
-    bottomRightFrame, state="disabled", width=5, textvariable=elevationStringVar
-)
-elevationTextBox.grid(row=5, column=0)
-elevationLabel = ttk.Label(
-    bottomRightFrame, text="Desired elevation (in deg)", justify="center"
-)
-elevationLabel.grid(row=6, column=0)
+magnitudeYLimLabel.grid(row=5, column=0)
 
 sofaViewButton = ttk.Button(
-    bottomSectionFrame,
-    text="View SOFA File",
+    bottomLeftFrame,
+    text="View SOFA file",
     style="my.TButton",
     state="disabled",
     command=lambda: viewSOFAGraphs(
@@ -2359,10 +2349,12 @@ sofaViewButton = ttk.Button(
         sofaEmitterStringVar.get(),
     ),
 )
-sofaViewButton.grid(row=4, column=0, columnspan=2)
+# sofaViewButton.grid(row=4, column=0, columnspan=2)
+sofaViewButton.grid(row=6, column=0)
+
 sofaSaveButton = ttk.Button(
-    bottomSectionFrame,
-    text="Save all SOFA graphs",
+    bottomRightFrame,
+    text="Save all SOFA graphs...",
     style="my.TButton",
     state="disabled",
     command=lambda: saveSOFAGraphs(
@@ -2373,10 +2365,35 @@ sofaSaveButton = ttk.Button(
         sofaEmitterStringVar.get(),
     ),
 )
-sofaSaveButton.grid(row=4, column=1, columnspan=2)
+# sofaSaveButton.grid(row=4, column=1, columnspan=2)
+sofaSaveButton.grid(row=6, column=0)
+
+bottomLeftSeparator2 = ttk.Label(bottomLeftFrame, text='', justify='center')
+bottomLeftSeparator2.grid(row=7, column=0)
+
+bottomRightSeparator2 = ttk.Label(bottomRightFrame, text='', justify='center')
+bottomRightSeparator2.grid(row=7, column=0)
+
+azimuthTextBox = ttk.Entry(
+    bottomLeftFrame, state="disabled", width=5, textvariable=azimuthStringVar
+)
+azimuthTextBox.grid(row=8, column=0)
+azimuthLabel = ttk.Label(
+    bottomLeftFrame, text="Desired azimuth (in deg)", justify="center"
+)
+azimuthLabel.grid(row=9, column=0)
+elevationTextBox = ttk.Entry(
+    bottomRightFrame, state="disabled", width=5, textvariable=elevationStringVar
+)
+elevationTextBox.grid(row=8, column=0)
+elevationLabel = ttk.Label(
+    bottomRightFrame, text="Desired elevation (in deg)", justify="center"
+)
+elevationLabel.grid(row=9, column=0)
+
 sofaRenderButton = ttk.Button(
     bottomSectionFrame,
-    text="Render Source with SOFA file",
+    text="Render source with SOFA file...",
     style="my.TButton",
     state="disabled",
     command=lambda: renderWithSOFA(
@@ -2413,5 +2430,6 @@ if sys.platform == 'win32':
     ttkStyles = ttk.Style()
     ttkStyles.configure("my.TButton", font=("SunValleyBodyFont", 9))
     apply_theme_to_titlebar(root) # yes i know this is redundant
+    pass
 
 root.mainloop()
