@@ -2090,6 +2090,16 @@ if sys.platform == "darwin": # macOS
     pass
 
 if sys.platform == 'win32':
+    root_menu_file_hrtf.entryconfigure('Load HRTF file (.wav)...', accelerator='Control+H')
+    root.bind('<Control-h>', lambda x:selectHRTFFile())
+    
+    root_menu_file_source.entryconfigure('Load source file (.wav)...', accelerator='Control+R')
+    root.bind('<Control-r>', lambda x:selectSourceFile())
+    
+    root_menu_file_sofa.entryconfigure('Load SOFA file (.sofa)...', accelerator='Control+F')
+    root.bind('<Control-f>', lambda x:selectSOFAFile())
+    
+    # windows system menu
     sysmenu = tk.Menu(root_menubar, name='system')
     root_menubar.add_cascade(menu=sysmenu)
     pass
