@@ -10,3 +10,4 @@ dist
 main.bin
 nuitka-crash-report.xml
 nuitka.txt
+*.app
