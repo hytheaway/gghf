@@ -804,13 +804,13 @@ def getSOFAFileDimensions(in_sofa_file: str):
     apply_theme_to_titlebar(sofaDimensionsWindow)
     sofaDimensionsWindow.iconphoto(False, icon_photo)
     centered_window(sofaDimensionsWindow)
-    sofaDimensionsWindow.geometry("600x400")
+    sofaDimensionsWindow.geometry("500x425")
     sofaDimensionsWindow.title("SOFA File Dimensions")
-    v = tk.Scrollbar(sofaDimensionsWindow, orient="vertical")
-    v.pack(side="right", fill="y")
+    # v = tk.Scrollbar(sofaDimensionsWindow, orient="vertical")
+    # v.pack(side="right", fill="y")
     definitionsLabel = tk.Label(
         sofaDimensionsWindow,
-        text="C = Size of coordinate dimension (always three).\n\nI = Single dimension (always one).\n\nM = Number of measurements.\n\nR = Number of receivers or SH coefficients (depending on ReceiverPosition_Type).\n\nE = Number of emitters or SH coefficients (depending on EmitterPosition_Type).\n\nN = Number of samples, frequencies, SOS coefficients (depending on self.GLOBAL_DataType).",
+        text="\nM = Number of measurements.\n\nR = Number of receivers or harmonic coefficients\ndescribing receivers (depending on ReceiverPosition_Type).\n\nE = Number of emitters or harmonic coefficients\ndescribing emitters (depending on EmitterPosition_Type).\n\nN = Number of data samples describing\none measurement (depending on self.GLOBAL_DataType).\n\nS = number of characters in a string.\n\nI = Single dimension (always one).\n\nC = Size of coordinate dimension (always three).\n",
     )
     definitionsLabel.pack()
     myString = ""
@@ -826,7 +826,8 @@ def getSOFAFileDimensions(in_sofa_file: str):
             + "\n"
         )
     windowSOFADimensionsLabel = tk.Text(
-        sofaDimensionsWindow, width=10, height=10, wrap="word", yscrollcommand=v.set
+        # sofaDimensionsWindow, width=10, height=10, wrap="word", yscrollcommand=v.set
+        sofaDimensionsWindow, width=10, height=10, wrap="word"
     )
     windowSOFADimensionsLabel.insert("end", str(myString))
     windowSOFADimensionsLabel.pack()
