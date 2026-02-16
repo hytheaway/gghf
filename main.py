@@ -768,8 +768,8 @@ def getSOFAFileMetadata(in_sofa_file: str):
     sofaMetadataWindow = tk.Toplevel(root)
     apply_theme_to_titlebar(sofaMetadataWindow)
     sofaMetadataWindow.iconphoto(False, icon_photo)
+    sofaMetadataWindow.geometry("725x400")
     centered_window(sofaMetadataWindow)
-    sofaMetadataWindow.geometry("400x400")
     sofaMetadataWindow.title("SOFA File Metadata")
     v = tk.Scrollbar(sofaMetadataWindow, orient="vertical")
     v.pack(side="right", fill="y")
@@ -803,14 +803,14 @@ def getSOFAFileDimensions(in_sofa_file: str):
     sofaDimensionsWindow = tk.Toplevel(root)
     apply_theme_to_titlebar(sofaDimensionsWindow)
     sofaDimensionsWindow.iconphoto(False, icon_photo)
-    centered_window(sofaDimensionsWindow)
     sofaDimensionsWindow.geometry("500x425")
+    centered_window(sofaDimensionsWindow)
     sofaDimensionsWindow.title("SOFA File Dimensions")
     # v = tk.Scrollbar(sofaDimensionsWindow, orient="vertical")
     # v.pack(side="right", fill="y")
     definitionsLabel = tk.Label(
         sofaDimensionsWindow,
-        text="\nM = Number of measurements.\n\nR = Number of receivers or harmonic coefficients\ndescribing receivers (depending on ReceiverPosition_Type).\n\nE = Number of emitters or harmonic coefficients\ndescribing emitters (depending on EmitterPosition_Type).\n\nN = Number of data samples describing\none measurement (depending on self.GLOBAL_DataType).\n\nS = number of characters in a string.\n\nI = Single dimension (always one).\n\nC = Size of coordinate dimension (always three).\n",
+        text="\nM = Number of measurements.\n\nR = Number of receivers, or harmonic coefficients\ndescribing receivers (depending on ReceiverPosition_Type).\n\nE = Number of emitters, or harmonic coefficients\ndescribing emitters (depending on EmitterPosition_Type).\n\nN = Number of data samples describing\none measurement (depending on self.GLOBAL_DataType).\n\nS = number of characters in a string.\n\nI = Single dimension (always one).\n\nC = Size of coordinate dimension (always three).\n",
     )
     definitionsLabel.pack()
     myString = ""
@@ -1283,34 +1283,38 @@ def renderWithSOFA(
             elev = 0
 
         # init
+        """
+        new SOFA convolution process, this is more reliable methinks. 
+        done away with separating the azimuth (az_idx) and elevation (sub_idx) separation and replaced with a unified M_idx. this helped me identify an issue where, if az_idx and sub_idx do not reference the same row in SOFA_HRTF.Data.IR, then the HRTF that's pulled may not match the input azimuth and elevation. 
+        also removed the database adjustment... while this is helpful for older SOFA files, it causes a problem in the following ways:
+        - some SOFA datasets have 0deg = directly to the right of the listener (this is not an incorrect way to reference polar coordinates). however, depending on how the SOFA file was sampled, the previous encoding process of "angle = 360 - angle" may not result in a genuine center position, or may be left heavy.
+        - if a SOFA file's coordinate system is "listener from above" instead of "listener from front", this angle reassignment would cause a discrepancy where what is referred to as "0deg" is not exactly 0deg. 
+        """
         SOFA_HRTF = sofa.Database.open(in_sofa_file)
         sofa_fs_H = SOFA_HRTF.Data.SamplingRate.get_values()[0]
         sofa_positions = SOFA_HRTF.Source.Position.get_values(system="spherical")
-        SOFA_H = np.zeros([SOFA_HRTF.Dimensions.N, 2])
-        Stereo3D = np.zeros([SOFA_HRTF.Dimensions.N, 2])
 
         angle = int(angle)
         elev = int(elev)
+        
+        desired_az = angle
+        desired_el = elev
+        az_array = sofa_positions[:,0]
+        el_array = sofa_positions[:,1]
+        
+        dist = np.sqrt((az_array - desired_az) ** 2 + (el_array - desired_el) ** 2)
+        M_idx = np.argmin(dist)
+        
+        SOFA_H = np.zeros((SOFA_HRTF.Dimensions.N, 2))
+        SOFA_H[:, 0] = SOFA_HRTF.Data.IR.get_values(indices={"M": M_idx, "R": 0, "E": 0})
+        SOFA_H[:, 1] = SOFA_HRTF.Data.IR.get_values(indices={"M": M_idx, "R": 1, "E": 0})
 
         # database specific format adjustments
         global angle_label
         global elev_label
         angle_label = angle
         elev_label = elev
-        angle = 360 - angle
-        if angle == 360:
-            angle = 0
-
-        # retrieve hrtf data for angle
-        [az, az_idx] = find_nearest(sofa_positions[:, 0], angle)
-        subpositions = sofa_positions[np.where(sofa_positions[:, 0] == az)]
-        [el, sub_idx] = find_nearest(subpositions[:, 1], elev)
-        SOFA_H[:, 0] = SOFA_HRTF.Data.IR.get_values(
-            indices={"M": az_idx + sub_idx, "R": 0, "E": 0}
-        )
-        SOFA_H[:, 1] = SOFA_HRTF.Data.IR.get_values(
-            indices={"M": az_idx + sub_idx, "R": 1, "E": 0}
-        )
+        
         if sofa_fs_H != target_fs:
             # print("---\n** Recalc SR **\nSOFA file SR =", sofa_fs_H, "\nTarget SR =", target_fs)
             # print("---\nOld shape =", SOFA_H.shape)
@@ -1339,12 +1343,10 @@ def renderWithSOFA(
 
         rend_L = signal.fftconvolve(source_x, SOFA_H[:, 0])
         rend_R = signal.fftconvolve(source_x, SOFA_H[:, 1])
-        M = np.max([np.abs(rend_L), np.abs(rend_R)])
-        if len(Stereo3D) < len(rend_L):
-            diff = len(rend_L) - len(Stereo3D)
-            Stereo3D = np.append(Stereo3D, np.zeros([diff, 2]), 0)
-        Stereo3D[0 : len(rend_L), 0] += rend_L / M
-        Stereo3D[0 : len(rend_R), 1] += rend_R / M
+        M_norm = np.max([np.abs(rend_L), np.abs(rend_R)])
+        Stereo3D = np.zeros((len(rend_L), 2))
+        Stereo3D[:, 0] = rend_L / M_norm
+        Stereo3D[:, 1] = rend_R / M_norm
 
         exportSOFAConvolved(
             in_source_file,
